@@ -63,7 +63,7 @@ const NAV_ITEMS: NavItem[] = [
 export function Sidebar() {
   const queryClient = useQueryClient();
   const [collapsed, setCollapsed] = useState(false);
-  const [expandedItems, setExpandedItems] = useState<string[]>(['Madrasa', 'Finance']);
+  const [expandedItems, setExpandedItems] = useState<string[]>(['family_members', 'Family & Members', 'finance', 'Finance']);
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
   const { t } = useTranslation();
@@ -137,9 +137,11 @@ export function Sidebar() {
     return translated && translated !== `sidebar.${item.id}` ? translated : item.label;
   };
 
-  const toggleExpand = (label: string) => {
+  const toggleExpand = (idOrLabel: string) => {
     setExpandedItems(prev =>
-      prev.includes(label) ? prev.filter(i => i !== label) : [...prev, label]
+      prev.includes(idOrLabel)
+        ? prev.filter(i => i !== idOrLabel && i !== (idOrLabel === 'family_members' ? 'Family & Members' : idOrLabel === 'finance' ? 'Finance' : ''))
+        : [...prev, idOrLabel]
     );
   };
 
@@ -147,14 +149,15 @@ export function Sidebar() {
 
   const renderNavItem = (item: NavItem, depth = 0) => {
     const active = isActive(item.href);
-    const expanded = expandedItems.includes(item.label);
     const hasChildren = item.children && item.children.length > 0;
+    const hasActiveChild = item.children?.some(child => isActive(child.href));
+    const expanded = expandedItems.includes(item.id) || expandedItems.includes(item.label) || hasActiveChild;
 
     if (hasChildren) {
       return (
-        <div key={item.label}>
+        <div key={item.id || item.label}>
           <button
-            onClick={() => toggleExpand(item.label)}
+            onClick={() => toggleExpand(item.id)}
             className={cn(
               'nav-item w-full',
               expanded && 'text-emerald-400',
