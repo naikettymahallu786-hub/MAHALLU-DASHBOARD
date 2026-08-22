@@ -55,8 +55,11 @@ export default function ReceiptsPage() {
     const payment = receipt.paymentId;
     const memberName = payment?.paidForId?.name || 
                        payment?.paidById?.name || 
-                       members.find((m: any) => m._id === (payment?.paidForId || payment?.paidById))?.name || 
-                       'Member';
+                       payment?.metadata?.donorName ||
+                       payment?.metadata?.name ||
+                       receipt.metadata?.donorName ||
+                       members.find((m: any) => m._id === (payment?.paidForId?._id || payment?.paidForId || payment?.paidById?._id || payment?.paidById))?.name || 
+                       'Mahallu Member';
     const amount = formatCurrency(payment?.amount || 0);
     const date = formatDate(receipt.createdAt);
     
@@ -352,8 +355,11 @@ export default function ReceiptsPage() {
                     <span className="font-bold text-foreground">
                       {selectedReceiptForView.paymentId?.paidForId?.name || 
                        selectedReceiptForView.paymentId?.paidById?.name || 
-                       members.find((m: any) => m._id === (selectedReceiptForView.paymentId?.paidForId || selectedReceiptForView.paymentId?.paidById))?.name || 
-                       'Member'}
+                       selectedReceiptForView.paymentId?.metadata?.donorName ||
+                       selectedReceiptForView.paymentId?.metadata?.name ||
+                       selectedReceiptForView.metadata?.donorName ||
+                       members.find((m: any) => m._id === (selectedReceiptForView.paymentId?.paidForId?._id || selectedReceiptForView.paymentId?.paidForId || selectedReceiptForView.paymentId?.paidById?._id || selectedReceiptForView.paymentId?.paidById))?.name || 
+                       'Mahallu Member'}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
