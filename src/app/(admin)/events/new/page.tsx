@@ -3,12 +3,13 @@
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Save, ArrowLeft, Loader2, Plus, Trash2, Image as ImageIcon, Sparkles, FileText, CheckCircle2 } from 'lucide-react';
+import { Save, ArrowLeft, Loader2, Plus, Trash2, Image as ImageIcon, Sparkles, FileText, CheckCircle2, Languages } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
 import { toast } from 'sonner';
 import { useState, useEffect } from 'react';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { translateToMalayalam } from '@/lib/translate';
 
 const toBase64 = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -132,16 +133,86 @@ export default function NewEventPage() {
     }
   };
 
+  const [isTranslating, setIsTranslating] = useState(false);
+
+  const titleVal = watch('title');
+  const descVal = watch('description');
+  const venueVal = watch('venue');
+
+  // Handle Global Translation for all text fields
+  const handleTranslateAll = async () => {
+    if (!titleVal?.trim() && !descVal?.trim() && !venueVal?.trim()) {
+      toast.error('Please enter title, description, or venue first');
+      return;
+    }
+
+    try {
+      setIsTranslating(true);
+      const [transTitle, transDesc, transVenue] = await Promise.all([
+        titleVal?.trim() ? translateToMalayalam(titleVal) : Promise.resolve(''),
+        descVal?.trim() ? translateToMalayalam(descVal) : Promise.resolve(''),
+        venueVal?.trim() ? translateToMalayalam(venueVal) : Promise.resolve(''),
+      ]);
+
+      if (transTitle) setValue('title', transTitle);
+      if (transDesc) setValue('description', transDesc);
+      if (transVenue) setValue('venue', transVenue);
+
+      toast.success('Converted event details to Malayalam! (മലയാളത്തിലേക്ക് മാറ്റി)');
+    } catch (e) {
+      toast.error('Translation failed. Please check network connection.');
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  // Handle Individual Field Translation
+  const handleTranslateField = async (field: 'title' | 'description' | 'venue') => {
+    const val = field === 'title' ? titleVal : field === 'description' ? descVal : venueVal;
+    if (!val?.trim()) {
+      toast.error(`Please enter text in ${field} first`);
+      return;
+    }
+
+    try {
+      setIsTranslating(true);
+      const translated = await translateToMalayalam(val);
+      setValue(field, translated);
+      toast.success(`Converted ${field} to Malayalam!`);
+    } catch (e) {
+      toast.error('Translation failed');
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-16">
-      <div className="flex items-center gap-4">
-        <Link href="/events" className="p-2 rounded-xl border border-border hover:bg-muted transition-colors">
-          <ArrowLeft size={18} />
-        </Link>
-        <div>
-          <h1 className="page-title">Create Community Event</h1>
-          <p className="page-subtitle">Schedule a new program, gathering, or Islamic conference notice</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-4">
+          <Link href="/events" className="p-2 rounded-xl border border-border hover:bg-muted transition-colors">
+            <ArrowLeft size={18} />
+          </Link>
+          <div>
+            <h1 className="page-title">Create Community Event</h1>
+            <p className="page-subtitle">Schedule a new program, gathering, or Islamic conference notice</p>
+          </div>
         </div>
+
+        {/* Global Translate to Malayalam Button */}
+        <button
+          type="button"
+          onClick={handleTranslateAll}
+          disabled={isTranslating}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition-all shadow-sm self-start sm:self-auto"
+        >
+          {isTranslating ? (
+            <Loader2 size={15} className="animate-spin text-emerald-600" />
+          ) : (
+            <Languages size={15} className="text-emerald-600 dark:text-emerald-400" />
+          )}
+          <span>Change to Malayalam (മലയാളത്തിലേക്ക് മാറ്റുക)</span>
+        </button>
       </div>
 
       {/* Template Selector Banner */}
@@ -210,22 +281,42 @@ export default function NewEventPage() {
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-1.5">Event Title *</label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-sm font-medium">Event Title *</label>
+                <button
+                  type="button"
+                  onClick={() => handleTranslateField('title')}
+                  disabled={isTranslating}
+                  className="text-[11px] text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1"
+                >
+                  <Sparkles size={11} /> Translate to Malayalam
+                </button>
+              </div>
               <input
                 type="text"
                 {...register('title', { required: true })}
-                placeholder="e.g. Annual Meelad Conference 2026"
+                placeholder="e.g. Annual Meelad Conference 2026 / വാർഷിക മീലാദ് സമ്മേളനം"
                 className="w-full px-3.5 py-2.5 rounded-xl border bg-background text-sm font-medium"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1.5">Description / Program Notice Text</label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-sm font-medium">Description / Program Notice Text</label>
+                <button
+                  type="button"
+                  onClick={() => handleTranslateField('description')}
+                  disabled={isTranslating}
+                  className="text-[11px] text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1"
+                >
+                  <Sparkles size={11} /> Translate to Malayalam
+                </button>
+              </div>
               <textarea
                 {...register('description')}
                 rows={4}
-                placeholder="Provide event details, schedule, or Malayalam flyer notice..."
-                className="w-full px-3.5 py-2.5 rounded-xl border bg-background text-sm font-medium font-sans"
+                placeholder="Provide event details, schedule, or notice description in English or Manglish..."
+                className="w-full px-3.5 py-2.5 rounded-xl border bg-background text-sm font-medium font-sans leading-relaxed"
               />
             </div>
 
@@ -250,11 +341,21 @@ export default function NewEventPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1.5">Venue Location</label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-sm font-medium">Venue Location</label>
+                  <button
+                    type="button"
+                    onClick={() => handleTranslateField('venue')}
+                    disabled={isTranslating}
+                    className="text-[11px] text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1"
+                  >
+                    <Sparkles size={11} /> Translate
+                  </button>
+                </div>
                 <input
                   type="text"
                   {...register('venue')}
-                  placeholder="e.g. Mahallu Auditorium / Main Hall"
+                  placeholder="e.g. Mahallu Auditorium / മഹല്ല് ഓഡിറ്റോറിയം"
                   className="w-full px-3.5 py-2.5 rounded-xl border bg-background text-sm font-medium"
                 />
               </div>
