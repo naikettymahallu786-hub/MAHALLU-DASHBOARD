@@ -244,12 +244,14 @@ export default function EventTemplatesPage() {
                   {template.description || 'Pre-configured event template with Malayalam variables and session schedule.'}
                 </p>
 
-                {/* Variable Badges */}
+                {/* Badges */}
                 <div className="flex flex-wrap gap-1.5 pt-2">
-                  <span className="text-[10px] font-bold px-2 py-1 bg-muted rounded-lg text-foreground">
-                    ⚡ {template.variables?.length || 0} Dynamic Variables
-                  </span>
-                  <span className="text-[10px] font-bold px-2 py-1 bg-muted rounded-lg text-foreground">
+                  {template.venue && (
+                    <span className="text-[10px] font-bold px-2 py-1 bg-muted rounded-lg text-foreground">
+                      📍 {template.venue}
+                    </span>
+                  )}
+                  <span className="text-[10px] font-bold px-2 py-1 bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 rounded-lg">
                     📅 {template.programSchedule?.length || 0} Program Sessions
                   </span>
                 </div>
@@ -845,7 +847,7 @@ export default function EventTemplatesPage() {
             {/* Modal Bottom Footer Actions */}
             <div className="flex items-center justify-between border-t px-6 py-4 bg-muted/20">
               <span className="text-xs text-muted-foreground font-medium">
-                {scheduleItems.length} Sessions • {variables.length} Variables configured
+                {scheduleItems.length} Program Sessions configured
               </span>
 
               <div className="flex items-center gap-3">
