@@ -52,7 +52,7 @@ export default function WhatsAppPage() {
             <div>
               <p className="text-sm font-semibold mb-1">Webhook URL</p>
               <code className="text-xs bg-muted px-3 py-2 rounded-xl block border border-border/40 select-all">
-                {`${process.env.NEXT_PUBLIC_API_URL || 'https://mahallu-4d9t.onrender.com/api/v1'}/whatsapp/webhook`}
+                {`${process.env.NEXT_PUBLIC_API_URL || 'https://mahallu-backend-cv55.onrender.com/api/v1'}/whatsapp/webhook`}
               </code>
             </div>
 
