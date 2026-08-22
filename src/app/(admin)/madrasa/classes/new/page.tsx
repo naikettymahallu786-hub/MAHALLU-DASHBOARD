@@ -31,14 +31,47 @@ export default function NewClassPage() {
     queryFn: () => apiClient.get('/teachers').then((r) => r.data),
   });
 
+  const { data: membersData } = useQuery({
+    queryKey: ['members-for-usthadh'],
+    queryFn: () => apiClient.get('/members', { params: { limit: 2000 } }).then((r) => r.data.data || []),
+  });
+
   const teachersList = Array.isArray(teachersData?.data)
     ? teachersData.data
     : Array.isArray(teachersData)
     ? teachersData
     : [];
 
+  const membersList = Array.isArray(membersData) ? membersData : membersData?.items || [];
+
+  // Build combined options list
+  const teacherOptions = [
+    ...teachersList.map((t: any) => ({
+      value: t._id,
+      label: `Usthadh: ${t.memberId?.name || t.name || 'Teacher'} (${t.qualification || 'Teacher'}${t.memberId?.phone ? ` • ${t.memberId.phone}` : ''})`,
+    })),
+    ...membersList
+      .filter((m: any) => !teachersList.some((t: any) => (t.memberId?._id || t.memberId) === m._id))
+      .map((m: any) => ({
+        value: `member_${m._id}`,
+        label: `Member: ${m.name} (${m.phone || 'Mahallu Member'})`,
+      })),
+  ];
+
   const createMutation = useMutation({
-    mutationFn: (data: any) => apiClient.post('/classes', data),
+    mutationFn: async (data: any) => {
+      let teacherId = data.teacherId;
+      if (teacherId && teacherId.startsWith('member_')) {
+        const actualMemberId = teacherId.replace('member_', '');
+        const newTeacherRes = await apiClient.post('/teachers', {
+          memberId: actualMemberId,
+          qualification: 'Usthadh / Teacher',
+          salary: 0,
+        });
+        teacherId = newTeacherRes.data?.data?._id;
+      }
+      return apiClient.post('/classes', { ...data, teacherId: teacherId || undefined });
+    },
     onSuccess: (res) => {
       const newClassId = res.data?.data?._id;
       toast.success('Madrasa class created successfully! (ക്ലാസ് വിജയകരമായി ചേർത്തു)');
@@ -122,10 +155,7 @@ export default function NewClassPage() {
                 name="teacherId"
                 render={({ field }) => (
                   <SearchableSelect
-                    options={teachersList.map((t: any) => ({
-                      value: t._id,
-                      label: `${t.memberId?.name || 'Ustadh'} (${t.qualification || 'Teacher'}${t.memberId?.phone ? ` • ${t.memberId.phone}` : ''})`,
-                    }))}
+                    options={teacherOptions}
                     value={field.value}
                     onChange={field.onChange}
                     placeholder="-- Select Class Usthadh (ഉസ്താദിനെ തിരഞ്ഞെടുക്കുക) --"
