@@ -1,9 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useRouter, usePathname } from 'next/navigation';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Save, ArrowLeft, Loader2 } from 'lucide-react';
+import { Save, ArrowLeft, Loader2, BookOpen, User, Home, GraduationCap, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
 import { toast } from 'sonner';
@@ -15,105 +16,161 @@ export default function NewClassPage() {
   const isMadrasaPortal = pathname.startsWith('/madrasa-portal');
   const backUrl = isMadrasaPortal ? '/madrasa-portal/classes' : '/madrasa/classes';
 
-  const { register, handleSubmit, control } = useForm();
-  
-  const { data: teachersData } = useQuery({ 
-    queryKey: ['teachers'], 
-    queryFn: () => apiClient.get('/teachers').then(r => r.data) 
-  });
-  
-  const { data: studentsData } = useQuery({ 
-    queryKey: ['students'], 
-    queryFn: () => apiClient.get('/students').then(r => r.data) 
+  const { register, handleSubmit, control } = useForm({
+    defaultValues: {
+      name: '',
+      level: 1,
+      academicYear: '2026-2027',
+      teacherId: '',
+      subjects: 'Quran, Fiqh, Aqeedah, Akhlaq, Arabic, Thareekh',
+    },
   });
 
-  const teachersList = Array.isArray(teachersData?.data) 
-    ? teachersData.data 
-    : (Array.isArray(teachersData) ? teachersData : []);
+  const { data: teachersData } = useQuery({
+    queryKey: ['teachers'],
+    queryFn: () => apiClient.get('/teachers').then((r) => r.data),
+  });
 
-  const studentsList = Array.isArray(studentsData?.data) 
-    ? studentsData.data 
-    : (Array.isArray(studentsData) ? studentsData : []);
+  const teachersList = Array.isArray(teachersData?.data)
+    ? teachersData.data
+    : Array.isArray(teachersData)
+    ? teachersData
+    : [];
 
   const createMutation = useMutation({
     mutationFn: (data: any) => apiClient.post('/classes', data),
-    onSuccess: () => {
-      toast.success('Class created successfully!');
-      router.push(backUrl);
+    onSuccess: (res) => {
+      const newClassId = res.data?.data?._id;
+      toast.success('Madrasa class created successfully! (ക്ലാസ് വിജയകരമായി ചേർത്തു)');
+      if (newClassId) {
+        router.push(isMadrasaPortal ? `/madrasa-portal/classes/${newClassId}` : `/madrasa/classes/${newClassId}`);
+      } else {
+        router.push(backUrl);
+      }
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed to create class')
+    onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed to create class'),
   });
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
+    <div className="space-y-6 max-w-2xl mx-auto pb-16">
       <div className="flex items-center gap-3">
-        <Link href={backUrl}><button className="p-2 rounded-xl border"><ArrowLeft size={16} /></button></Link>
+        <Link href={backUrl}>
+          <button className="p-2 rounded-xl border hover:bg-muted transition-colors">
+            <ArrowLeft size={16} />
+          </button>
+        </Link>
         <div>
-          <h1 className="page-title text-xl">Add New Class</h1>
-          <p className="page-subtitle font-medium">Create a class and assign an Ustadh</p>
+          <h1 className="page-title text-xl">Create Madrasa Class (ക്ലാസ് നിർമ്മിക്കുക)</h1>
+          <p className="page-subtitle font-medium">Create a new class, set academic grade, and assign Usthadh</p>
         </div>
       </div>
-      <div className="section-card">
-        <form onSubmit={handleSubmit(d => {
-          const formattedData = { ...d };
-          if (typeof d.subjects === 'string' && d.subjects.trim()) {
-            formattedData.subjects = d.subjects.split(',').map((s: string) => s.trim());
-          } else {
-            formattedData.subjects = [];
-          }
-          createMutation.mutate(formattedData);
-        })} className="space-y-4">
+
+      <div className="section-card border border-border shadow-sm">
+        <form
+          onSubmit={handleSubmit((d) => {
+            const formattedData = { ...d };
+            if (typeof d.subjects === 'string' && d.subjects.trim()) {
+              formattedData.subjects = d.subjects.split(',').map((s: string) => s.trim());
+            } else {
+              formattedData.subjects = [];
+            }
+            if (!formattedData.teacherId) delete formattedData.teacherId;
+            createMutation.mutate(formattedData);
+          })}
+          className="space-y-5"
+        >
           <div className="grid grid-cols-1 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1.5">Class Name *</label>
-              <input type="text" {...register('name', { required: true })} placeholder="e.g. Class 1A" className="w-full px-4 py-2.5 rounded-xl border bg-background text-sm" />
+              <label className="block text-sm font-bold text-foreground mb-1.5">Class Name (ക്ലാസിന്റെ പേര്) *</label>
+              <input
+                type="text"
+                {...register('name', { required: true })}
+                placeholder="e.g. Class 1 A / ഒന്നാം ക്ലാസ്"
+                className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm font-medium focus:ring-2 focus:ring-emerald-500"
+              />
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-1.5">Academic Level (1-10) *</label>
-              <input type="number" {...register('level', { required: true, valueAsNumber: true })} defaultValue={1} className="w-full px-4 py-2.5 rounded-xl border bg-background text-sm" />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-bold text-foreground mb-1.5">Academic Level (1-12) *</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={12}
+                  {...register('level', { required: true, valueAsNumber: true })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-foreground mb-1.5">Academic Year *</label>
+                <input
+                  type="text"
+                  {...register('academicYear', { required: true })}
+                  placeholder="2026-2027"
+                  className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm font-medium"
+                />
+              </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1.5">Assigned Teacher (Ustadh)</label>
+              <label className="block text-sm font-bold text-foreground mb-1.5">
+                Assign Class Usthadh (ക്ലാസ് ഉസ്താദ്)
+              </label>
               <Controller
                 control={control}
                 name="teacherId"
                 render={({ field }) => (
                   <SearchableSelect
-                    options={teachersList.map((t: any) => ({ 
-                      value: t._id, 
-                      label: `${t.memberId?.name || 'Ustadh'} (${t.employeeId || 'Staff'})` 
+                    options={teachersList.map((t: any) => ({
+                      value: t._id,
+                      label: `${t.memberId?.name || 'Ustadh'} (${t.qualification || 'Teacher'}${t.memberId?.phone ? ` • ${t.memberId.phone}` : ''})`,
                     }))}
                     value={field.value}
                     onChange={field.onChange}
-                    placeholder="No Teacher Assigned"
+                    placeholder="-- Select Class Usthadh (ഉസ്താദിനെ തിരഞ്ഞെടുക്കുക) --"
                   />
                 )}
               />
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium mb-1.5 font-semibold">Assign Students (Hold Ctrl/Cmd to select multiple)</label>
-              <select multiple {...register('students')} className="w-full px-4 py-2.5 rounded-xl border bg-background text-sm min-h-[150px]">
-                {studentsList.map((s: any) => (
-                  <option key={s._id} value={s._id}>
-                    {s.memberId?.name || 'Unknown'} - {s.admissionNo}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-1.5">Subjects (Comma separated)</label>
-              <input type="text" {...register('subjects')} placeholder="Quran, Fiqh, Arabic" className="w-full px-4 py-2.5 rounded-xl border bg-background text-sm" />
+              <label className="block text-sm font-bold text-foreground mb-1.5">Subjects Taught (വിഷയങ്ങൾ)</label>
+              <input
+                type="text"
+                {...register('subjects')}
+                placeholder="Quran, Fiqh, Aqeedah, Akhlaq, Arabic, Thareekh"
+                className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm font-medium"
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">Separate subject names with commas</p>
             </div>
           </div>
-          
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <Link href={backUrl}><button type="button" className="px-5 py-2.5 rounded-xl border text-sm font-semibold">Cancel</button></Link>
-            <button type="submit" disabled={createMutation.isPending} className="btn-brand flex items-center gap-2">
-              {createMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Save Class
+
+          <div className="p-4 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/50 flex items-start gap-3">
+            <Home className="text-emerald-700 dark:text-emerald-400 mt-0.5" size={18} />
+            <div>
+              <p className="text-xs font-bold text-emerald-950 dark:text-emerald-200">Enrolling Students</p>
+              <p className="text-[11px] text-emerald-800/80 dark:text-emerald-300/80 mt-0.5">
+                After creating this class, you can immediately select families and enrol children with one click!
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-border">
+            <Link href={backUrl}>
+              <button
+                type="button"
+                className="px-5 py-2.5 rounded-xl border border-border text-sm font-bold hover:bg-muted transition-colors"
+              >
+                Cancel
+              </button>
+            </Link>
+            <button
+              type="submit"
+              disabled={createMutation.isPending}
+              className="btn-brand flex items-center gap-2 px-6 py-2.5 rounded-xl font-extrabold shadow-sm shadow-emerald-600/30"
+            >
+              {createMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Create Class & Add Students
             </button>
           </div>
         </form>
