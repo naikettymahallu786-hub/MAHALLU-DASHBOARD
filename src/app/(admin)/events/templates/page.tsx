@@ -33,23 +33,23 @@ export default function EventTemplatesPage() {
   const [editingTemplate, setEditingTemplate] = useState<any | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  // Form State for Template Creation/Editing
+  // Form State for Template Creation/Editing (Direct Blueprint / Demo)
   const [templateName, setTemplateName] = useState('');
   const [templateCategory, setTemplateCategory] = useState('Religious Conference');
   const [isCustomCategoryMode, setIsCustomCategoryMode] = useState(false);
   const [customCategoryInput, setCustomCategoryInput] = useState('');
+  const [templateVenue, setTemplateVenue] = useState('');
+  const [templateBannerUrl, setTemplateBannerUrl] = useState('');
   const [templateDesc, setTemplateDesc] = useState('');
   const [noticeText, setNoticeText] = useState('');
-  const [variables, setVariables] = useState<any[]>([
-    { key: 'EVENT_TITLE', label: 'Event Title / പരിപാടി ശീർഷകം', defaultValue: 'വാർഷിക സമ്മേളനം' },
-    { key: 'VENUE', label: 'Venue / സ്ഥലം', defaultValue: 'മഖാം ജുമാ മസ്ജിദ് അങ്കണം' },
-  ]);
   const [scheduleItems, setScheduleItems] = useState<any[]>([
     {
       dayNumber: 1,
       dateText: '30 ഏപ്രിൽ',
       sessionTime: '8.00 PM',
       sessionTitle: 'മത പ്രഭാഷണം',
+      president: 'മഹല്ല് പ്രസിഡന്റ്',
+      inaugurator: 'സയ്യിദ് തങ്ങൾ',
       keynoteSpeaker: 'ഉസ്താദ് കെ. ബഷീർ ബാഖവി',
       voteOfThanks: 'കൺവീനർ',
     },
@@ -109,11 +109,10 @@ export default function EventTemplatesPage() {
     setTemplateCategory('Religious Conference');
     setIsCustomCategoryMode(false);
     setCustomCategoryInput('');
+    setTemplateVenue('');
+    setTemplateBannerUrl('');
     setTemplateDesc('');
     setNoticeText('');
-    setVariables([
-      { key: 'EVENT_TITLE', label: 'Event Title / പരിപാടി ശീർഷകം', defaultValue: 'വാർഷിക സമ്മേളനം' },
-    ]);
     setScheduleItems([]);
   };
 
@@ -123,9 +122,10 @@ export default function EventTemplatesPage() {
     setTemplateCategory(t.category || 'Religious Conference');
     setIsCustomCategoryMode(false);
     setCustomCategoryInput('');
+    setTemplateVenue(t.venue || '');
+    setTemplateBannerUrl(t.bannerUrl || '');
     setTemplateDesc(t.description || '');
     setNoticeText(t.noticeTemplateText || '');
-    setVariables(t.variables || []);
     setScheduleItems(t.programSchedule || []);
     setIsCreateModalOpen(true);
   };
@@ -141,9 +141,10 @@ export default function EventTemplatesPage() {
     saveMutation.mutate({
       name: templateName,
       category: finalCategory,
+      venue: templateVenue,
+      bannerUrl: templateBannerUrl,
       description: templateDesc,
       noticeTemplateText: noticeText,
-      variables,
       programSchedule: scheduleItems,
     });
   };
@@ -540,6 +541,30 @@ export default function EventTemplatesPage() {
                         )}
                       </div>
 
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-bold mb-1 text-foreground">Default Venue (സ്ഥലം)</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. മഖാം ജുമാ മസ്ജിദ് അങ്കണം"
+                            value={templateVenue}
+                            onChange={(e) => setTemplateVenue(e.target.value)}
+                            className="w-full px-3.5 py-2.5 bg-background border rounded-xl text-sm"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold mb-1 text-foreground">Banner / Poster Image URL</label>
+                          <input
+                            type="text"
+                            placeholder="https://example.com/poster.jpg"
+                            value={templateBannerUrl}
+                            onChange={(e) => setTemplateBannerUrl(e.target.value)}
+                            className="w-full px-3.5 py-2.5 bg-background border rounded-xl text-sm"
+                          />
+                        </div>
+                      </div>
+
                       <div>
                         <label className="block text-xs font-bold mb-1 text-foreground">Short Description</label>
                         <input
@@ -550,71 +575,6 @@ export default function EventTemplatesPage() {
                           className="w-full px-3.5 py-2.5 bg-background border rounded-xl text-sm"
                         />
                       </div>
-                    </div>
-                  </div>
-
-                  {/* Dynamic Variables Section */}
-                  <div className="space-y-3 border-t pt-5">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-black text-emerald-800 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
-                        ⚡ 2. Dynamic Variables (വേരിയബിളുകൾ)
-                      </h3>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setVariables([...variables, { key: `VAR_${variables.length + 1}`, label: 'New Variable', defaultValue: '' }])
-                        }
-                        className="text-xs font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 px-3 py-1 rounded-xl border border-emerald-300 cursor-pointer"
-                      >
-                        + Add Variable
-                      </button>
-                    </div>
-
-                    <div className="space-y-2">
-                      {variables.map((v, i) => (
-                        <div key={i} className="flex gap-2 items-center bg-muted/40 p-2.5 rounded-2xl border">
-                          <input
-                            type="text"
-                            placeholder="Key (e.g. EVENT_TITLE)"
-                            value={v.key}
-                            onChange={(e) => {
-                              const updated = [...variables];
-                              updated[i].key = e.target.value;
-                              setVariables(updated);
-                            }}
-                            className="w-1/3 px-2.5 py-1.5 bg-background border rounded-lg text-xs font-bold"
-                          />
-                          <input
-                            type="text"
-                            placeholder="Label (e.g. പരിപാടി ശീർഷകം)"
-                            value={v.label}
-                            onChange={(e) => {
-                              const updated = [...variables];
-                              updated[i].label = e.target.value;
-                              setVariables(updated);
-                            }}
-                            className="w-1/3 px-2.5 py-1.5 bg-background border rounded-lg text-xs"
-                          />
-                          <input
-                            type="text"
-                            placeholder="Default value"
-                            value={v.defaultValue || ''}
-                            onChange={(e) => {
-                              const updated = [...variables];
-                              updated[i].defaultValue = e.target.value;
-                              setVariables(updated);
-                            }}
-                            className="w-1/3 px-2.5 py-1.5 bg-background border rounded-lg text-xs"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setVariables(variables.filter((_, idx) => idx !== i))}
-                            className="text-rose-500 hover:text-rose-700 p-1"
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
-                      ))}
                     </div>
                   </div>
 

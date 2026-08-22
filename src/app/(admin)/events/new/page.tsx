@@ -25,7 +25,7 @@ export default function NewEventPage() {
   const templateIdParam = searchParams.get('templateId');
 
   const [selectedTemplateId, setSelectedTemplateId] = useState(templateIdParam || '');
-  const [variableValues, setVariableValues] = useState<Record<string, string>>({});
+  const [eventSessions, setEventSessions] = useState<any[]>([]);
 
   const { register, control, handleSubmit, setValue, watch } = useForm({
     defaultValues: {
@@ -56,41 +56,22 @@ export default function NewEventPage() {
 
   const activeTemplate = templates.find((t: any) => t._id === selectedTemplateId);
 
-  // Auto-fill form when template is selected
+  // Auto-fill form and program sessions when template is selected
   useEffect(() => {
     if (activeTemplate) {
       if (activeTemplate.name) setValue('title', activeTemplate.name);
+      if (activeTemplate.venue) setValue('venue', activeTemplate.venue);
+      if (activeTemplate.noticeTemplateText || activeTemplate.description) {
+        setValue('description', activeTemplate.noticeTemplateText || activeTemplate.description);
+      }
 
-      const initialVars: Record<string, string> = {};
-      activeTemplate.variables?.forEach((v: any) => {
-        initialVars[v.key] = v.defaultValue || '';
-      });
-      setVariableValues(initialVars);
-
-      if (initialVars['VENUE_NAME']) setValue('venue', initialVars['VENUE_NAME']);
-      if (activeTemplate.noticeTemplateText) {
-        setValue('description', activeTemplate.noticeTemplateText);
+      if (Array.isArray(activeTemplate.programSchedule) && activeTemplate.programSchedule.length > 0) {
+        setEventSessions(JSON.parse(JSON.stringify(activeTemplate.programSchedule)));
+      } else {
+        setEventSessions([]);
       }
     }
   }, [selectedTemplateId, activeTemplate, setValue]);
-
-  // Handle Variable Value Change
-  const handleVariableChange = (key: string, value: string) => {
-    const updated = { ...variableValues, [key]: value };
-    setVariableValues(updated);
-
-    if (key === 'VENUE_NAME') setValue('venue', value);
-    if (key === 'ANNIVERSARY_TITLE' || key === 'EVENT_TITLE') setValue('title', value);
-
-    // Update formatted description text
-    if (activeTemplate?.noticeTemplateText) {
-      let formattedText = activeTemplate.noticeTemplateText;
-      Object.keys(updated).forEach((k) => {
-        formattedText = formattedText.replace(new RegExp(`{{${k}}}`, 'g'), updated[k] || '');
-      });
-      setValue('description', formattedText);
-    }
-  };
 
   const { data: membersData } = useQuery({
     queryKey: ['all-members-list'],
@@ -115,15 +96,16 @@ export default function NewEventPage() {
       const payload = { ...data };
       if (bannerFile) {
         payload.banner = { url: await toBase64(bannerFile) };
+      } else if (activeTemplate?.bannerUrl) {
+        payload.banner = { url: activeTemplate.bannerUrl };
       }
+
       if (bgFile) {
         payload.idCardBgImage = { url: await toBase64(bgFile) };
       }
 
-      // Include template program schedule if applied
-      if (activeTemplate?.programSchedule) {
-        payload.programSchedule = activeTemplate.programSchedule;
-      }
+      // Include all customized program sessions from editor
+      payload.programSchedule = eventSessions;
 
       payload.committeeMembers = payload.committeeMembers.filter((cm: any) => cm.memberId && cm.role);
 
@@ -215,15 +197,15 @@ export default function NewEventPage() {
         </button>
       </div>
 
-      {/* Template Selector Banner */}
+      {/* Template Preset Selector Banner */}
       <div className="bg-gradient-to-r from-slate-900 via-emerald-950 to-teal-950 p-6 rounded-3xl text-white shadow-xl space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-amber-400" />
-            <h2 className="font-extrabold text-base text-white">⚡ Choose Event Program Template</h2>
+            <h2 className="font-extrabold text-base text-white">⚡ Apply Event Preset Template (ടെംപ്ലേറ്റുകൾ)</h2>
           </div>
           <Link href="/events/templates" className="text-xs text-emerald-300 hover:underline font-bold">
-            + Manage / Create Templates
+            + Manage / Create New Templates
           </Link>
         </div>
 
@@ -232,44 +214,27 @@ export default function NewEventPage() {
           onChange={(e) => setSelectedTemplateId(e.target.value)}
           className="w-full px-4 py-3 bg-slate-800 border border-slate-700 text-white rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
         >
-          <option value="">-- Standard Event (No Template) --</option>
+          <option value="">-- Start from Scratch (No Template) --</option>
           {templates.map((t: any) => (
             <option key={t._id} value={t._id}>
-              {t.name} ({t.category})
+              {t.name} ({t.category}) - {t.programSchedule?.length || 0} Sessions
             </option>
           ))}
         </select>
 
         {activeTemplate && (
-          <div className="bg-white/10 p-4 rounded-2xl space-y-3 border border-white/10">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-extrabold text-emerald-300 uppercase">
-                Active Template: {activeTemplate.name}
+          <div className="bg-white/10 p-4 rounded-2xl flex items-center justify-between border border-white/10">
+            <div>
+              <span className="text-xs font-black text-emerald-300 uppercase block">
+                ✓ Template Applied: {activeTemplate.name}
               </span>
-              <span className="text-[10px] bg-emerald-500 text-white font-extrabold px-2.5 py-0.5 rounded-full">
-                Auto-applied
+              <span className="text-[11px] text-slate-300">
+                All sessions, speakers, notice text, and venue have been pre-filled below for you to edit.
               </span>
             </div>
-
-            {/* Template Dynamic Variable Inputs */}
-            {activeTemplate.variables?.length > 0 && (
-              <div className="space-y-2 pt-2 border-t border-white/10">
-                <p className="text-xs font-bold text-slate-300">Fill Program Variables (മലയാളം വിവരങ്ങൾ നൽക്കുക):</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {activeTemplate.variables.map((v: any) => (
-                    <div key={v.key}>
-                      <label className="block text-[11px] font-semibold text-slate-300 mb-1">{v.label}</label>
-                      <input
-                        type="text"
-                        value={variableValues[v.key] ?? v.defaultValue ?? ''}
-                        onChange={(e) => handleVariableChange(v.key, e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <span className="text-[10px] bg-emerald-500 text-white font-extrabold px-3 py-1 rounded-full">
+              {eventSessions.length} Sessions Loaded
+            </span>
           </div>
         )}
       </div>
@@ -277,7 +242,7 @@ export default function NewEventPage() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Basic Info */}
         <div className="section-card space-y-4">
-          <h2 className="font-bold text-lg border-b pb-2">Event Details</h2>
+          <h2 className="font-bold text-lg border-b pb-2">Event Details & Notice</h2>
 
           <div className="space-y-4">
             <div>
@@ -369,6 +334,219 @@ export default function NewEventPage() {
                 />
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Multi-Day Program Sessions Schedule Builder */}
+        <div className="section-card space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-3 gap-2">
+            <div>
+              <h2 className="font-extrabold text-lg text-foreground flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-emerald-600" />
+                Program Sessions & Speakers Schedule (പ്രോഗ്രാം സെഷനുകൾ)
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Loaded from template. You can add, edit, or customize session days, times, and speakers.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                setEventSessions([
+                  ...eventSessions,
+                  {
+                    dayNumber: eventSessions.length + 1,
+                    dateText: '',
+                    sessionTime: '',
+                    sessionTitle: '',
+                    president: '',
+                    inaugurator: '',
+                    keynoteSpeaker: '',
+                    chiefGuests: '',
+                    voteOfThanks: '',
+                  },
+                ])
+              }
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 self-start sm:self-auto cursor-pointer"
+            >
+              <Plus size={14} /> + Add Program Session
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {eventSessions.length === 0 ? (
+              <div className="p-6 rounded-2xl bg-muted/20 border-2 border-dashed border-border/70 text-center space-y-2">
+                <p className="text-xs font-bold text-muted-foreground">
+                  No program sessions added yet.
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  Click &quot;+ Add Program Session&quot; above to specify conference days, speakers, and timings.
+                </p>
+              </div>
+            ) : (
+              eventSessions.map((session, idx) => (
+                <div
+                  key={idx}
+                  className="bg-card border-2 border-emerald-500/20 rounded-2xl p-4 shadow-sm space-y-3"
+                >
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-black flex items-center justify-center">
+                        {session.dayNumber || idx + 1}
+                      </span>
+                      <span className="font-extrabold text-xs text-foreground">
+                        Session {idx + 1} (സെഷൻ വിവരങ്ങൾ)
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEventSessions(eventSessions.filter((_, i) => i !== idx))}
+                      className="text-xs font-bold text-rose-500 hover:text-rose-700 flex items-center gap-1"
+                    >
+                      <Trash2 size={13} /> Remove
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-muted-foreground mb-1">
+                        Date / Day Text (ദിനം / തീയതി)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 30 ഏപ്രിൽ / Day 1"
+                        value={session.dateText || ''}
+                        onChange={(e) => {
+                          const updated = [...eventSessions];
+                          updated[idx].dateText = e.target.value;
+                          setEventSessions(updated);
+                        }}
+                        className="w-full px-3 py-2 bg-background border rounded-xl text-xs font-semibold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-muted-foreground mb-1">
+                        Session Time (സമയം)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 8.00 PM"
+                        value={session.sessionTime || ''}
+                        onChange={(e) => {
+                          const updated = [...eventSessions];
+                          updated[idx].sessionTime = e.target.value;
+                          setEventSessions(updated);
+                        }}
+                        className="w-full px-3 py-2 bg-background border rounded-xl text-xs font-semibold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-muted-foreground mb-1">
+                        Session Title * (ശീർഷകം)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. മത പ്രഭാഷണം / സമാപന സമ്മേളനം"
+                        value={session.sessionTitle || ''}
+                        onChange={(e) => {
+                          const updated = [...eventSessions];
+                          updated[idx].sessionTitle = e.target.value;
+                          setEventSessions(updated);
+                        }}
+                        className="w-full px-3 py-2 bg-background border rounded-xl text-xs font-extrabold text-emerald-800 dark:text-emerald-300"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-muted-foreground mb-1">
+                        President (അധ്യക്ഷൻ)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="അധ്യക്ഷന്റെ പേര്"
+                        value={session.president || ''}
+                        onChange={(e) => {
+                          const updated = [...eventSessions];
+                          updated[idx].president = e.target.value;
+                          setEventSessions(updated);
+                        }}
+                        className="w-full px-3 py-2 bg-background border rounded-xl text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-muted-foreground mb-1">
+                        Inauguration (ഉദ്ഘാടനം)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="ഉദ്ഘാടകന്റെ പേര്"
+                        value={session.inaugurator || ''}
+                        onChange={(e) => {
+                          const updated = [...eventSessions];
+                          updated[idx].inaugurator = e.target.value;
+                          setEventSessions(updated);
+                        }}
+                        className="w-full px-3 py-2 bg-background border rounded-xl text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-muted-foreground mb-1">
+                        Keynote Speaker (പ്രഭാഷകൻ)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="പ്രഭാഷകന്റെ പേര്"
+                        value={session.keynoteSpeaker || ''}
+                        onChange={(e) => {
+                          const updated = [...eventSessions];
+                          updated[idx].keynoteSpeaker = e.target.value;
+                          setEventSessions(updated);
+                        }}
+                        className="w-full px-3 py-2 bg-background border rounded-xl text-xs font-semibold"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-[11px] font-bold text-muted-foreground mb-1">
+                        Chief Guests (വിശിഷ്ട അതിഥികൾ)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="അതിഥികളുടെ പേരുകൾ"
+                        value={session.chiefGuests || ''}
+                        onChange={(e) => {
+                          const updated = [...eventSessions];
+                          updated[idx].chiefGuests = e.target.value;
+                          setEventSessions(updated);
+                        }}
+                        className="w-full px-3 py-2 bg-background border rounded-xl text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-muted-foreground mb-1">
+                        Vote of Thanks (നന്ദി)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="നന്ദി രേഖപ്പെടുത്തുന്ന വ്യക്തി"
+                        value={session.voteOfThanks || ''}
+                        onChange={(e) => {
+                          const updated = [...eventSessions];
+                          updated[idx].voteOfThanks = e.target.value;
+                          setEventSessions(updated);
+                        }}
+                        className="w-full px-3 py-2 bg-background border rounded-xl text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
