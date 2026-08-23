@@ -156,6 +156,13 @@ export default function DashboardPage() {
     staleTime: 60 * 1000,
   });
 
+  // Finance summary fallback for live pending dues
+  const { data: financeReport } = useQuery({
+    queryKey: ['dashboard-finance-summary'],
+    queryFn: () => apiClient.get('/payments/reports/finance', { params: { limit: 1 } }).then(r => r.data.data),
+    staleTime: 60 * 1000,
+  });
+
   // Process data for Recharts
   const incomeExpenseData = useMemo(() => {
     if (!incomeExpenseRaw) return [];
@@ -189,15 +196,19 @@ export default function DashboardPage() {
     }));
   }, [memberGrowthRaw]);
 
+  const pendingDuesValue = (kpis?.pendingFees && kpis.pendingFees > 0)
+    ? kpis.pendingFees
+    : (financeReport?.summary?.pendingAmount || 0);
+
   const feeCollectionData = useMemo(() => {
     if (!kpis) return [];
-    const total = (kpis.monthlyIncome || 0) + (kpis.pendingFees || 0);
+    const total = (kpis.monthlyIncome || 0) + (pendingDuesValue || 0);
     if (total === 0) return [{ name: 'No Data', value: 100, color: '#e2e8f0' }];
     return [
       { name: 'Collected', value: Math.round(((kpis.monthlyIncome || 0) / total) * 100), color: CHART_COLORS.emerald },
-      { name: 'Pending', value: Math.round(((kpis.pendingFees || 0) / total) * 100), color: CHART_COLORS.amber },
+      { name: 'Pending', value: Math.round(((pendingDuesValue || 0) / total) * 100), color: CHART_COLORS.amber },
     ];
-  }, [kpis]);
+  }, [kpis, pendingDuesValue]);
 
   const formatKpiCurrency = (val: number | undefined) => {
     if (!val || isNaN(val) || val === 0) return '₹0';
@@ -208,15 +219,15 @@ export default function DashboardPage() {
   };
 
   const kpiCards = [
-    { title: t('dashboard.totalFamilies'), value: kpis?.totalFamilies || 0, icon: Home, color: '#059669', trend: 'up' as const, change: 'Active', href: '/families' },
-    { title: t('dashboard.totalMembers'), value: kpis?.totalMembers || 0, icon: Users, color: '#3b82f6', trend: 'up' as const, change: 'Registered', href: '/members' },
-    { title: t('sidebar.students'), value: kpis?.activeStudents || 0, icon: GraduationCap, color: '#8b5cf6', trend: 'neutral' as const, change: 'Enrolled', href: '/students' },
-    { title: t('sidebar.teachers'), value: kpis?.activeTeachers || 0, icon: UserCheck, color: '#f59e0b', change: 'Active', href: '/teachers' },
-    { title: t('dashboard.monthlyCollection'), value: formatKpiCurrency(kpis?.monthlyIncome), icon: TrendingUp, color: '#059669', trend: 'up' as const, change: 'Income' },
-    { title: t('finance.expense'), value: formatKpiCurrency(kpis?.monthlyExpenses), icon: TrendingDown, color: '#f43f5e', trend: 'down' as const, change: 'Expenses' },
-    { title: t('dashboard.pendingDues'), value: formatKpiCurrency(kpis?.pendingFees), icon: Clock, color: '#f59e0b', change: 'Outstanding dues', href: '/receipts' },
-    { title: t('sidebar.donations'), value: formatKpiCurrency(kpis?.monthlyDonations), icon: Heart, color: '#ec4899', trend: 'up' as const, change: 'This month', href: '/donations' },
-    { title: t('sidebar.zakat'), value: formatKpiCurrency(kpis?.zakatCollected), icon: Zap, color: '#14b8a6', change: 'All-time total', href: '/sadaqah' },
+    { title: t('dashboard.totalFamilies'), value: kpis?.totalFamilies || 0, icon: Home, color: '#059669', trend: 'up' as const, change: t('members.active'), href: '/families' },
+    { title: t('dashboard.totalMembers'), value: kpis?.totalMembers || 0, icon: Users, color: '#3b82f6', trend: 'up' as const, change: t('sidebar.members'), href: '/members' },
+    { title: t('sidebar.students'), value: kpis?.activeStudents || 0, icon: GraduationCap, color: '#8b5cf6', trend: 'neutral' as const, change: t('sidebar.students'), href: '/students' },
+    { title: t('sidebar.teachers'), value: kpis?.activeTeachers || 0, icon: UserCheck, color: '#f59e0b', change: t('sidebar.teachers'), href: '/teachers' },
+    { title: t('dashboard.monthlyCollection'), value: formatKpiCurrency(kpis?.monthlyIncome), icon: TrendingUp, color: '#059669', trend: 'up' as const, change: t('finance.income') },
+    { title: t('finance.expense'), value: formatKpiCurrency(kpis?.monthlyExpenses), icon: TrendingDown, color: '#f43f5e', trend: 'down' as const, change: t('finance.expense') },
+    { title: t('dashboard.pendingDues'), value: formatKpiCurrency(pendingDuesValue), icon: Clock, color: '#f59e0b', change: t('dashboard.pendingDues'), href: '/finance/reports?paymentStatus=unpaid' },
+    { title: t('sidebar.donations'), value: formatKpiCurrency(kpis?.monthlyDonations), icon: Heart, color: '#ec4899', trend: 'up' as const, change: t('sadaqah_page.thisMonth'), href: '/donations' },
+    { title: t('sidebar.zakat'), value: formatKpiCurrency(kpis?.zakatCollected), icon: Zap, color: '#14b8a6', change: t('sadaqah_page.allTime'), href: '/sadaqah' },
   ];
 
   const quickActions = [
@@ -225,8 +236,8 @@ export default function DashboardPage() {
     { label: t('dashboard.generateReceipt'), icon: FileText, href: '/receipts/new', color: '#3b82f6' },
     { label: t('dashboard.registerNikah'), icon: Heart, href: '/nikah/new', color: '#ec4899' },
     { label: t('dashboard.burialEntry'), icon: Users, href: '/death/new', color: '#64748b' },
-    { label: 'Create Event', icon: Zap, href: '/events/new', color: '#10b981' },
-    { label: 'Sadaqah Ledger', icon: Heart, href: '/sadaqah', color: '#14b8a6' },
+    { label: t('events.createEvent'), icon: Zap, href: '/events/new', color: '#10b981' },
+    { label: t('sadaqah_page.title'), icon: Heart, href: '/sadaqah', color: '#14b8a6' },
     { label: t('dashboard.collectDonation'), icon: DollarSign, href: '/donations/new', color: '#f59e0b' },
   ];
 

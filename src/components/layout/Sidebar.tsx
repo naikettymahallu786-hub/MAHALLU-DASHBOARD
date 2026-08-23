@@ -41,14 +41,14 @@ const NAV_ITEMS: NavItem[] = [
   {
     id: 'finance', label: 'Finance', icon: DollarSign,
     children: [
-      { id: 'overview', label: 'Overview', href: '/finance', icon: DollarSign },
+      { id: 'overview', label: 'Income & Expense', href: '/finance', icon: DollarSign },
       { id: 'receipts', label: 'Receipts', href: '/receipts', icon: FileText },
       { id: 'donations', label: 'Donations', href: '/donations', icon: Heart },
       { id: 'recurring_donations', label: 'Recurring Donations', href: '/recurring-donations', icon: Calendar },
       { id: 'finance_reports', label: 'Full Finance Reports', href: '/finance/reports', icon: BarChart3 },
     ],
   },
-  { id: 'properties', label: 'Properties', href: '/properties', icon: Building2 },
+  { id: 'properties', label: 'Properties & Rental', href: '/properties', icon: Building2 },
   { id: 'certificates', label: 'Certificates', href: '/certificates', icon: FileText },
   { id: 'zakat', label: 'Sadaqah', href: '/sadaqah', icon: Zap },
   { id: 'nikah', label: 'Nikah', href: '/nikah', icon: Heart },
@@ -160,7 +160,13 @@ export function Sidebar() {
     );
   };
 
-  const isActive = (href?: string) => href && pathname.startsWith(href) && href !== '/';
+  const isActive = (href?: string) => {
+    if (!href || href === '/') return false;
+    if (pathname === href) return true;
+    if (href === '/finance') return pathname === '/finance';
+    if (href === '/members') return pathname === '/members' || (pathname.startsWith('/members/') && !pathname.startsWith('/members/import-export'));
+    return pathname.startsWith(href + '/');
+  };
 
   const renderNavItem = (item: NavItem, depth = 0) => {
     const active = isActive(item.href);

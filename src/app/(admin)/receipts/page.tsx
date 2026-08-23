@@ -97,7 +97,8 @@ export default function ReceiptsPage() {
         </head>
         <body>
           <div class="header">
-            <h1 class="title">MAHALLU ERP SYSTEM</h1>
+            <div style="font-size: 16px; color: #065f46; margin-bottom: 6px; font-weight: bold;">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
+            <h1 class="title">NAIKKETTY MAHALLU</h1>
             <p class="subtitle">Official Payment Receipt • ഔദ്യോഗിക രസീത്</p>
           </div>
           <div class="row"><div class="label">Receipt No:</div><div class="value" style="font-weight: bold; color: #059669;">${receipt.receiptNo}</div></div>

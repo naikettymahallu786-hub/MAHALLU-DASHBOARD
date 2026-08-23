@@ -8,10 +8,12 @@ import { apiClient } from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { useTranslation } from '@/lib/i18n/useTranslation';
 
 const CURRENT_YEAR = new Date().getFullYear();
 
 export default function SadaqahPage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [selectedType, setSelectedType] = useState('all');
@@ -143,7 +145,7 @@ export default function SadaqahPage() {
           <div class="container">
             <div class="header">
               <div class="bismillah">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
-              <h1 class="title">MAHALLU COMMUNITY PORTAL</h1>
+              <h1 class="title">NAIKKETTY MAHALLU</h1>
               <p class="subtitle">Official Sadaqah & Welfare Receipt • സ്വദഖ രസീത്</p>
               <div class="badge">RECEIPT NO: ${receiptNo}</div>
             </div>
@@ -199,11 +201,11 @@ export default function SadaqahPage() {
         <div>
           <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-1">
             <HandHeart className="h-4 w-4" />
-            Voluntary Charity & Relief Fund
+            {t('sadaqah_page.title')}
           </div>
-          <h1 className="text-2xl md:text-3xl font-extrabold">Sadaqah (സ്വദഖ) Ledger</h1>
+          <h1 className="text-2xl md:text-3xl font-extrabold">{t('sadaqah_page.title')}</h1>
           <p className="text-emerald-100/80 text-sm mt-1">
-            Record, track, and manage voluntary Sadaqah contributions from community members.
+            {t('sadaqah_page.subtitle')}
           </p>
         </div>
 
@@ -213,7 +215,7 @@ export default function SadaqahPage() {
             className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-bold text-sm px-5 py-3 rounded-2xl shadow-md transition-all shrink-0 cursor-pointer"
           >
             <Plus className="h-4 w-4" />
-            Record Sadaqah Receipt
+            {t('sadaqah_page.logReceipt')}
           </button>
         </div>
       </div>
@@ -221,9 +223,9 @@ export default function SadaqahPage() {
       {/* Analytics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
-          { label: 'Total Sadaqah Collected', value: formatCurrency(totalCollected), icon: DollarSign, color: '#059669' },
-          { label: 'Total Unique Contributors', value: `${totalContributors} Members`, icon: UserCheck, color: '#3b82f6' },
-          { label: 'Active Sadaqah Fund', value: formatCurrency(totalCollected), icon: Heart, color: '#e11d48' },
+          { label: t('sadaqah_page.totalSadaqah'), value: formatCurrency(totalCollected), icon: DollarSign, color: '#059669' },
+          { label: t('sadaqah_page.externalContributors'), value: `${totalContributors} ${t('sidebar.members')}`, icon: UserCheck, color: '#3b82f6' },
+          { label: t('sadaqah_page.transactions'), value: formatCurrency(totalCollected), icon: Heart, color: '#e11d48' },
         ].map((stat, i) => (
           <motion.div
             key={stat.label}
@@ -248,7 +250,7 @@ export default function SadaqahPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 font-bold text-sm text-foreground">
             <Filter className="h-4 w-4 text-emerald-600" />
-            Filter Sadaqah Records
+            {t('sadaqah_page.searchPlaceholder')}
           </div>
 
           <div className="flex items-center gap-3">
@@ -257,7 +259,7 @@ export default function SadaqahPage() {
               className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer"
             >
               <Download className="h-4 w-4" />
-              Export CSV
+              {t('sadaqah_page.exportCsv')}
             </button>
           </div>
         </div>
@@ -267,7 +269,7 @@ export default function SadaqahPage() {
             <Search className="absolute left-3.5 top-3 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search by Donor Name, Phone, Receipt #..."
+              placeholder={t('sadaqah_page.searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -298,8 +300,8 @@ export default function SadaqahPage() {
       <div className="bg-card border border-border rounded-3xl overflow-hidden shadow-sm">
         <div className="p-5 border-b border-border flex items-center justify-between">
           <div>
-            <h2 className="font-bold text-lg text-foreground">Sadaqah Collections Ledger</h2>
-            <p className="text-xs text-muted-foreground">Showing {sadaqahList.length} verified Sadaqah contributions</p>
+            <h2 className="font-bold text-lg text-foreground">{t('sadaqah_page.title')}</h2>
+            <p className="text-xs text-muted-foreground">{sadaqahList.length} {t('sadaqah_page.transactions')}</p>
           </div>
           <button onClick={() => refetch()} className="p-2 text-muted-foreground hover:text-foreground rounded-xl border border-border">
             <RefreshCw className="h-4 w-4" />
@@ -309,27 +311,27 @@ export default function SadaqahPage() {
         {isLoading ? (
           <div className="p-12 text-center text-muted-foreground">
             <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-3 text-emerald-600" />
-            Loading Sadaqah records...
+            {t('sadaqah_page.loading', { default: 'Loading...' })}
           </div>
         ) : sadaqahList.length === 0 ? (
           <div className="p-12 text-center">
             <HandHeart className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-            <h3 className="font-bold text-foreground text-base">No Sadaqah records found</h3>
-            <p className="text-xs text-muted-foreground mt-1">Record a new Sadaqah payment to see it here.</p>
+            <h3 className="font-bold text-foreground text-base">{t('sadaqah_page.noRecords')}</h3>
+            <p className="text-xs text-muted-foreground mt-1">{t('sadaqah_page.noRecordsDesc')}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="bg-muted/50 border-b text-xs uppercase tracking-wider text-muted-foreground font-bold">
                 <tr>
-                  <th className="px-6 py-4">Receipt #</th>
-                  <th className="px-6 py-4">Date</th>
-                  <th className="px-6 py-4">Donor Name</th>
-                  <th className="px-6 py-4">Category / ഇനം</th>
-                  <th className="px-6 py-4">Amount</th>
-                  <th className="px-6 py-4">Method</th>
-                  <th className="px-6 py-4">Notes</th>
-                  <th className="px-6 py-4 text-right">Receipt</th>
+                  <th className="px-6 py-4">{t('sadaqah_page.receiptNo')}</th>
+                  <th className="px-6 py-4">{t('sadaqah_page.date')}</th>
+                  <th className="px-6 py-4">{t('sadaqah_page.donorFamily')}</th>
+                  <th className="px-6 py-4">{t('sadaqah_page.category')}</th>
+                  <th className="px-6 py-4">{t('sadaqah_page.amount')}</th>
+                  <th className="px-6 py-4">{t('sadaqah_page.paymentMode')}</th>
+                  <th className="px-6 py-4">{t('sadaqah_page.notes')}</th>
+                  <th className="px-6 py-4 text-right">{t('sadaqah_page.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">

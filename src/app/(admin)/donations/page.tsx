@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Search, Plus, DollarSign, Download, Loader2, X } from 'lucide-react';
+import { Heart, Search, Plus, DollarSign, Download, Loader2, X, Eye, Printer } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
 import { cn, formatCurrency, formatDate } from '@/lib/utils';
@@ -17,7 +17,8 @@ export default function DonationsPage() {
   const [limit, setLimit] = useState(20);
   const [campaign, setCampaign] = useState('');
 
-  // Payment states
+  // View & Payment states
+  const [selectedDonationForView, setSelectedDonationForView] = useState<any>(null);
   const [selectedDonation, setSelectedDonation] = useState<any>(null);
   const [isCollectModalOpen, setIsCollectModalOpen] = useState(false);
   const [collectAmount, setCollectAmount] = useState('');
@@ -45,6 +46,74 @@ export default function DonationsPage() {
     },
     onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed to collect donation')
   });
+
+  const handlePrintDonationReceipt = (donation: any) => {
+    const donorDisplay = donation.isAnonymous
+      ? 'Anonymous Donor'
+      : (donation.familyId
+        ? `Family: ${donation.familyId.headMemberId?.name || donation.familyId.familyCode}`
+        : (donation.donorId?.name || donation.donorName || 'Mahallu Well-wisher'));
+    const campaignName = donation.campaign || donation.purpose || 'Charity Campaign';
+    const amount = formatCurrency(donation.amount || 0);
+    const date = formatDate(donation.createdAt);
+    const receiptNo = donation.receiptId?.receiptNo || `RCP-DON-${String(donation._id).slice(-6).toUpperCase()}`;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Donation Receipt ${receiptNo}</title>
+          <style>
+            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #1e293b; max-width: 800px; margin: 0 auto; background: #fff; }
+            .container { border: 2px solid #059669; border-radius: 16px; padding: 30px; }
+            .header { text-align: center; border-bottom: 2px dashed #cbd5e1; padding-bottom: 20px; margin-bottom: 25px; }
+            .bismillah { font-size: 18px; color: #065f46; margin-bottom: 6px; font-weight: bold; }
+            .title { font-size: 24px; font-weight: 900; color: #047857; margin: 0 0 4px 0; }
+            .subtitle { color: #64748b; font-size: 13px; margin: 0; font-weight: 600; }
+            .badge { display: inline-block; background: #ecfdf5; color: #047857; font-size: 13px; font-weight: 800; padding: 5px 16px; border-radius: 20px; margin-top: 10px; border: 1px solid #a7f3d0; }
+            .row { display: flex; justify-content: space-between; margin-bottom: 14px; font-size: 14px; }
+            .label { font-weight: 700; color: #475569; width: 180px; }
+            .value { flex: 1; font-weight: 600; color: #0f172a; }
+            .amount-box { background: linear-gradient(135deg, #059669 0%, #047857 100%); color: #ffffff; padding: 18px 24px; text-align: center; border-radius: 12px; margin: 25px 0; }
+            .amount { font-size: 32px; font-weight: 900; margin: 0; }
+            .footer { margin-top: 30px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px; }
+            @media print { body { padding: 0; } }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <div class="bismillah">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
+              <h1 class="title">NAIKKETTY MAHALLU</h1>
+              <p class="subtitle">Official Donation Receipt • സംഭാവന രസീത്</p>
+              <div class="badge">RECEIPT NO: ${receiptNo}</div>
+            </div>
+            <div class="row"><div class="label">Date / തീയതി:</div><div class="value">${date}</div></div>
+            <div class="row"><div class="label">Donor (ദാതാവ്):</div><div class="value">${donorDisplay}</div></div>
+            <div class="row"><div class="label">Campaign (ഇനം):</div><div class="value" style="font-weight: bold; color: #047857;">${campaignName}</div></div>
+            <div class="row"><div class="label">Payment Status:</div><div class="value" style="font-weight: bold; color: #059669;">Verified & Paid</div></div>
+            ${donation.notes ? `<div class="row"><div class="label">Notes / Purpose:</div><div class="value">${donation.notes}</div></div>` : ''}
+            
+            <div class="amount-box">
+              <p style="margin: 0 0 4px 0; font-size: 12px; text-transform: uppercase; font-weight: 700; color: #d1fae5;">Total Donation Received</p>
+              <p class="amount">${amount}</p>
+            </div>
+            
+            <div class="footer">
+              <p>Jazakallah Khair for supporting this noble cause.</p>
+              <p style="margin-top: 2px;">This is a verified computer generated official receipt.</p>
+            </div>
+          </div>
+          <script>
+            window.onload = function() { window.print(); }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   const donations = data?.data || [];
   const pagination = data?.pagination;
@@ -176,9 +245,20 @@ export default function DonationsPage() {
                       className="group"
                     >
                       <td className="pl-6">
-                        <span className="font-semibold text-sm text-foreground">
-                          {donation.isAnonymous ? 'Anonymous' : (donation.familyId ? `Family: ${donation.familyId.headMemberId?.name || donation.familyId.familyCode}` : (donation.donorId?.name || donation.donorName || 'General Donor'))}
-                        </span>
+                        <button
+                          onClick={() => setSelectedDonationForView(donation)}
+                          className="font-bold text-sm hover:underline flex items-center gap-1.5 cursor-pointer text-left group/donor"
+                          title="Click to view donation information"
+                        >
+                          <span className={donation.isAnonymous ? 'text-pink-600' : 'text-emerald-600 hover:text-emerald-500 font-bold'}>
+                            {donation.isAnonymous
+                              ? 'Anonymous Donor'
+                              : (donation.familyId
+                                ? `Family: ${donation.familyId.headMemberId?.name || donation.familyId.familyCode}`
+                                : (donation.donorId?.name || donation.donorName || 'General Donor'))}
+                          </span>
+                          <Eye size={13} className="opacity-0 group-hover/donor:opacity-100 transition-opacity text-emerald-600 shrink-0" />
+                        </button>
                       </td>
                       <td>
                         <span className="text-sm font-medium text-foreground capitalize">
@@ -208,19 +288,39 @@ export default function DonationsPage() {
                         </span>
                       </td>
                       <td className="pr-6 text-right">
-                        {donation.status === 'pending' && (
+                        <div className="flex items-center justify-end gap-2">
                           <button
-                            onClick={() => {
-                              setSelectedDonation(donation);
-                              setCollectAmount(String(donation.amount));
-                              setIsCollectModalOpen(true);
-                            }}
-                            className="px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white font-bold text-xs inline-flex items-center gap-1 hover:bg-emerald-700 transition-colors"
+                            onClick={() => setSelectedDonationForView(donation)}
+                            className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs inline-flex items-center gap-1 transition-colors"
+                            title="View details"
                           >
-                            <DollarSign size={13} />
-                            Collect
+                            <Eye size={13} />
+                            View
                           </button>
-                        )}
+                          {(donation.status === 'paid' || !donation.status) && (
+                            <button
+                              onClick={() => handlePrintDonationReceipt(donation)}
+                              className="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 font-bold text-xs inline-flex items-center gap-1 transition-colors"
+                              title="Export / Print Official Receipt"
+                            >
+                              <Printer size={13} />
+                              Receipt
+                            </button>
+                          )}
+                          {donation.status === 'pending' && (
+                            <button
+                              onClick={() => {
+                                setSelectedDonation(donation);
+                                setCollectAmount(String(donation.amount));
+                                setIsCollectModalOpen(true);
+                              }}
+                              className="px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white font-bold text-xs inline-flex items-center gap-1 hover:bg-emerald-700 transition-colors"
+                            >
+                              <DollarSign size={13} />
+                              Collect
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </motion.tr>
                   ))
@@ -354,6 +454,103 @@ export default function DonationsPage() {
                 >
                   {collectMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : 'Log Payment'}
                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* View Donation Details Modal */}
+        {selectedDonationForView && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-card w-full max-w-md rounded-3xl shadow-2xl border border-border overflow-hidden flex flex-col"
+            >
+              <div className="p-5 border-b flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600">
+                    <Heart className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="font-bold text-lg text-foreground">Donation Details</h2>
+                    <p className="text-xs text-muted-foreground">Campaign contribution record</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedDonationForView(null)}
+                  className="p-2 hover:bg-muted rounded-full text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4 text-sm">
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
+                  <span className="font-semibold text-muted-foreground">Donor Name:</span>
+                  <span className="font-bold text-foreground">
+                    {selectedDonationForView.isAnonymous
+                      ? 'Anonymous Donor'
+                      : (selectedDonationForView.familyId
+                        ? `Family Head: ${selectedDonationForView.familyId.headMemberId?.name || selectedDonationForView.familyId.familyCode}`
+                        : (selectedDonationForView.donorId?.name || selectedDonationForView.donorName || 'General Contributor'))}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
+                  <span className="font-semibold text-muted-foreground">Campaign / Purpose:</span>
+                  <span className="font-bold text-emerald-600 px-2.5 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs">
+                    {selectedDonationForView.campaign || selectedDonationForView.purpose || 'General Sadaqah'}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
+                  <span className="font-semibold text-muted-foreground">Status:</span>
+                  <span className={cn(
+                    'text-xs px-2.5 py-1 rounded-full font-bold capitalize',
+                    selectedDonationForView.status === 'paid' || !selectedDonationForView.status ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                  )}>
+                    {selectedDonationForView.status === 'paid' || !selectedDonationForView.status ? 'Paid' : 'Pending'}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
+                  <span className="font-semibold text-muted-foreground">Date:</span>
+                  <span className="font-semibold text-foreground">{formatDate(selectedDonationForView.createdAt)}</span>
+                </div>
+
+                {selectedDonationForView.notes && (
+                  <div className="flex justify-between items-start py-2 border-b border-border/50">
+                    <span className="font-semibold text-muted-foreground">Notes:</span>
+                    <span className="font-medium text-foreground text-right text-xs max-w-[220px]">
+                      {selectedDonationForView.notes}
+                    </span>
+                  </div>
+                )}
+
+                <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-2xl p-5 text-center text-white shadow-lg mt-3">
+                  <p className="text-xs font-bold uppercase tracking-wider text-emerald-100 mb-1">Donation Amount</p>
+                  <p className="text-3xl font-extrabold">{formatCurrency(selectedDonationForView.amount || 0)}</p>
+                </div>
+              </div>
+
+              <div className="p-4 border-t bg-muted/20 flex gap-3">
+                <button
+                  onClick={() => setSelectedDonationForView(null)}
+                  className="flex-1 py-2.5 rounded-xl border border-border font-bold text-xs hover:bg-muted transition-colors"
+                >
+                  Close
+                </button>
+                {(selectedDonationForView.status === 'paid' || !selectedDonationForView.status) && (
+                  <button
+                    onClick={() => handlePrintDonationReceipt(selectedDonationForView)}
+                    className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all"
+                  >
+                    <Printer size={14} />
+                    Export Receipt
+                  </button>
+                )}
               </div>
             </motion.div>
           </div>

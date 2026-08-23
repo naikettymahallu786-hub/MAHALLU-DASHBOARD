@@ -24,6 +24,7 @@ import { apiClient } from '@/lib/api';
 import { formatDate, formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { useTranslation } from '@/lib/i18n/useTranslation';
 
 const CURRENT_YEAR = new Date().getFullYear();
 const YEAR_OPTIONS = [
@@ -31,7 +32,6 @@ const YEAR_OPTIONS = [
   { value: String(CURRENT_YEAR), label: `Year ${CURRENT_YEAR}` },
   { value: String(CURRENT_YEAR - 1), label: `Year ${CURRENT_YEAR - 1}` },
   { value: String(CURRENT_YEAR - 2), label: `Year ${CURRENT_YEAR - 2}` },
-  { value: String(CURRENT_YEAR + 1), label: `Year ${CURRENT_YEAR + 1}` },
 ];
 
 const MONTH_NAMES = [
@@ -51,15 +51,16 @@ const MONTH_NAMES = [
 ];
 
 const CATEGORIES = [
-  { id: 'nikah', label: 'Nikah Marriages', icon: Heart, color: '#e11d48', endpoint: '/reports/export/nikah' },
-  { id: 'certificates', label: 'Certificates', icon: Award, color: '#0284c7', endpoint: '/reports/export/certificates' },
-  { id: 'events', label: 'Events & Programs', icon: Calendar, color: '#7c3aed', endpoint: '/reports/export/events' },
-  { id: 'death', label: 'Death & Burial', icon: Skull, color: '#64748b', endpoint: '/reports/export/death' },
-  { id: 'members', label: 'Member Census', icon: Users, color: '#3b82f6', endpoint: '/reports/export/members' },
-  { id: 'academic', label: 'Madrasa Academic', icon: GraduationCap, color: '#8b5cf6', endpoint: '/reports/export/academic' },
+  { id: 'nikah', label: 'Nikah Marriages', icon: Heart, color: '#e11d48', endpoint: '/reports/export/nikah', key: 'nikahTab' },
+  { id: 'certificates', label: 'Certificates', icon: Award, color: '#0284c7', endpoint: '/reports/export/certificates', key: 'certificatesTab' },
+  { id: 'events', label: 'Events & Programs', icon: Calendar, color: '#7c3aed', endpoint: '/reports/export/events', key: 'eventsTab' },
+  { id: 'death', label: 'Death & Burial', icon: Skull, color: '#64748b', endpoint: '/reports/export/death', key: 'deathTab' },
+  { id: 'members', label: 'Member Census', icon: Users, color: '#3b82f6', endpoint: '/reports/export/members', key: 'membersTab' },
+  { id: 'academic', label: 'Madrasa Academic', icon: GraduationCap, color: '#8b5cf6', endpoint: '/reports/export/academic', key: 'academicTab' },
 ];
 
 export default function ReportsPage() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('nikah');
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
@@ -135,11 +136,11 @@ export default function ReportsPage() {
         <div>
           <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-1">
             <BarChart3 className="h-4 w-4" />
-            Interactive Report Center
+            {t('master_reports_page.title')}
           </div>
-          <h1 className="text-2xl md:text-3xl font-extrabold">Filter & Export Master Reports</h1>
+          <h1 className="text-2xl md:text-3xl font-extrabold">{t('master_reports_page.title')}</h1>
           <p className="text-emerald-100/80 text-sm mt-1">
-            Filter records by keywords, date distance, status, and download spreadsheet exports for any Mahallu department.
+            {t('master_reports_page.subtitle')}
           </p>
         </div>
 
@@ -149,7 +150,7 @@ export default function ReportsPage() {
             className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-bold text-sm px-5 py-3 rounded-2xl shadow-md transition-all shrink-0"
           >
             <DollarSign className="h-4 w-4" />
-            Full Finance Ledger
+            {t('finance_reports_page.title')}
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
@@ -160,6 +161,7 @@ export default function ReportsPage() {
         {CATEGORIES.map((cat) => {
           const Icon = cat.icon;
           const isActive = activeTab === cat.id;
+          const translatedLabel = t(`master_reports_page.${cat.key || 'nikahTab'}`);
           return (
             <button
               key={cat.id}
@@ -174,7 +176,7 @@ export default function ReportsPage() {
               }`}
             >
               <Icon className="h-4 w-4" style={{ color: isActive ? 'inherit' : cat.color }} />
-              {cat.label}
+              {translatedLabel && translatedLabel !== `master_reports_page.${cat.key}` ? translatedLabel : cat.label}
             </button>
           );
         })}
@@ -185,7 +187,7 @@ export default function ReportsPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 font-bold text-sm text-foreground">
             <Filter className="h-4 w-4 text-emerald-600" />
-            Filter {activeCategory.label} Data
+            {t('sadaqah_page.searchPlaceholder')}
           </div>
 
           <div className="flex items-center gap-3">
@@ -193,16 +195,16 @@ export default function ReportsPage() {
               onClick={handleResetFilters}
               className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground font-semibold cursor-pointer"
             >
-              <RefreshCw className="h-3.5 w-3.5" /> Reset Filters
+              <RefreshCw className="h-3.5 w-3.5" /> {t('sadaqah_page.allTime')}
             </button>
 
             <button
-              onClick={handleDownloadCSV}
-              disabled={isDownloading || records.length === 0}
-              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all disabled:opacity-50 cursor-pointer"
+              onClick={handleExportExcel}
+              disabled={isDownloading}
+              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer"
             >
               <Download className="h-4 w-4" />
-              {isDownloading ? 'Exporting...' : 'Export Filtered CSV'}
+              {isDownloading ? '...' : t('master_reports_page.exportExcel')}
             </button>
           </div>
         </div>

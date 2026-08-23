@@ -59,11 +59,18 @@ const METHOD_OPTIONS = [
   { value: 'cheque', label: 'Cheque' },
 ];
 
+import { useSearchParams } from 'next/navigation';
+import { useTranslation } from '@/lib/i18n/useTranslation';
+
 export default function FullFinanceReportsPage() {
+  const { t } = useTranslation();
+  const searchParams = useSearchParams();
+  const initialStatus = searchParams.get('paymentStatus') || searchParams.get('status') || 'all';
+
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState<number | string>(20);
   const [search, setSearch] = useState('');
-  const [paymentStatus, setPaymentStatus] = useState('all');
+  const [paymentStatus, setPaymentStatus] = useState(initialStatus);
   const [category, setCategory] = useState('all');
   const [gateway, setGateway] = useState('all');
   const [selectedMonth, setSelectedMonth] = useState('all');
@@ -153,11 +160,11 @@ export default function FullFinanceReportsPage() {
         <div>
           <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-1">
             <DollarSign className="h-4 w-4" />
-            Comprehensive Financial Ledger
+            {t('finance_reports_page.title')}
           </div>
-          <h1 className="text-2xl md:text-3xl font-extrabold">Full Finance & Income Report</h1>
+          <h1 className="text-2xl md:text-3xl font-extrabold">{t('finance_reports_page.title')}</h1>
           <p className="text-emerald-100/80 text-sm mt-1">
-            Detailed breakdown of all receipts, donations, rents, zakat, and fee collections across your Mahallu.
+            {t('finance_reports_page.subtitle')}
           </p>
         </div>
 
@@ -168,7 +175,7 @@ export default function FullFinanceReportsPage() {
             className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 disabled:opacity-50 text-white font-bold text-sm px-5 py-3 rounded-2xl shadow-md transition-all cursor-pointer"
           >
             <Download className="h-4 w-4" />
-            {isDownloading ? 'Downloading...' : 'Export Filtered CSV'}
+            {isDownloading ? '...' : t('finance_reports_page.exportCsv')}
           </button>
         </div>
       </div>
@@ -177,88 +184,69 @@ export default function FullFinanceReportsPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-card border border-border p-5 rounded-2xl shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Collected Revenue</span>
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('finance_reports_page.netIncome')}</span>
             <div className="p-2.5 bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 rounded-xl">
               <DollarSign className="h-5 w-5" />
             </div>
           </div>
           <div className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-2">{formatCurrency(summary.totalIncome)}</div>
-          <p className="text-xs text-muted-foreground mt-1">{summary.completedCount} completed transactions</p>
+          <p className="text-xs text-muted-foreground mt-1">{summary.completedCount} {t('finance_reports_page.paidCount')}</p>
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="bg-card border border-border p-5 rounded-2xl shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pending Amount</span>
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('finance_reports_page.pendingDues')}</span>
             <div className="p-2.5 bg-amber-50 text-amber-600 dark:bg-amber-950/40 rounded-xl">
               <Clock className="h-5 w-5" />
             </div>
           </div>
           <div className="text-2xl font-extrabold text-amber-600 dark:text-amber-400 mt-2">{formatCurrency(summary.pendingAmount)}</div>
-          <p className="text-xs text-muted-foreground mt-1">{summary.pendingCount} pending payments</p>
+          <p className="text-xs text-muted-foreground mt-1">{summary.pendingCount} {t('finance_reports_page.unpaidCount')}</p>
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-card border border-border p-5 rounded-2xl shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Transactions</span>
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('finance_reports_page.totalVolume')}</span>
             <div className="p-2.5 bg-blue-50 text-blue-600 dark:bg-blue-950/40 rounded-xl">
               <CreditCard className="h-5 w-5" />
             </div>
           </div>
           <div className="text-2xl font-extrabold text-foreground mt-2">{summary.totalTransactions}</div>
-          <p className="text-xs text-muted-foreground mt-1">Across all categories</p>
+          <p className="text-xs text-muted-foreground mt-1">{t('sadaqah_page.transactions')}</p>
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="bg-card border border-border p-5 rounded-2xl shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Avg Transaction</span>
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('sadaqah_page.allTime')}</span>
             <div className="p-2.5 bg-purple-50 text-purple-600 dark:bg-purple-950/40 rounded-xl">
               <FileText className="h-5 w-5" />
             </div>
           </div>
           <div className="text-2xl font-extrabold text-foreground mt-2">{formatCurrency(summary.avgTransaction)}</div>
-          <p className="text-xs text-muted-foreground mt-1">Per successful receipt</p>
+          <p className="text-xs text-muted-foreground mt-1">{t('finance.balance')}</p>
         </motion.div>
       </div>
 
-      {/* Filter Control Section */}
-      <div className="bg-card border border-border p-6 rounded-3xl shadow-sm space-y-4">
+      {/* Filter Control Bar */}
+      <div className="bg-card border border-border p-5 rounded-3xl shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 font-bold text-sm text-foreground">
             <Filter className="h-4 w-4 text-emerald-600" />
-            Filter Financial Data
+            {t('sadaqah_page.searchPlaceholder')}
           </div>
+
           <button
             onClick={handleResetFilters}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground font-semibold cursor-pointer"
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-emerald-600 font-semibold"
           >
-            <RefreshCw className="h-3.5 w-3.5" /> Reset Filters
+            <RefreshCw className="h-3.5 w-3.5" />
+            {t('sadaqah_page.allTime')}
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
-          {/* Search */}
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          {/* Search Box */}
           <div className="relative">
-            <label className="block text-xs font-semibold text-muted-foreground mb-1">Search</label>
-            <div className="relative">
-              <Search className="absolute left-3.5 top-3 h-4 w-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Receipt #, Payment #, Name, Phone..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-background border border-border rounded-xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            </div>
-          </div>
-
-          {/* Category */}
-          <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1">Category / Type</label>
-            <select
-              value={category}
-              onChange={(e) => {
-                setCategory(e.target.value);
-                setPage(1);
               }}
               className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
