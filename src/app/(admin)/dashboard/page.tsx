@@ -199,16 +199,24 @@ export default function DashboardPage() {
     ];
   }, [kpis]);
 
+  const formatKpiCurrency = (val: number | undefined) => {
+    if (!val || isNaN(val) || val === 0) return '₹0';
+    if (val >= 1000000) {
+      return `₹${(val / 100000).toFixed(2)}L`;
+    }
+    return `₹${val.toLocaleString('en-IN')}`;
+  };
+
   const kpiCards = [
     { title: t('dashboard.totalFamilies'), value: kpis?.totalFamilies || 0, icon: Home, color: '#059669', trend: 'up' as const, change: 'Active', href: '/families' },
     { title: t('dashboard.totalMembers'), value: kpis?.totalMembers || 0, icon: Users, color: '#3b82f6', trend: 'up' as const, change: 'Registered', href: '/members' },
     { title: t('sidebar.students'), value: kpis?.activeStudents || 0, icon: GraduationCap, color: '#8b5cf6', trend: 'neutral' as const, change: 'Enrolled', href: '/students' },
     { title: t('sidebar.teachers'), value: kpis?.activeTeachers || 0, icon: UserCheck, color: '#f59e0b', change: 'Active', href: '/teachers' },
-    { title: t('dashboard.monthlyCollection'), value: `₹${((kpis?.monthlyIncome || 0) / 1000).toFixed(1)}K`, icon: TrendingUp, color: '#059669', trend: 'up' as const, change: 'Income' },
-    { title: t('finance.expense'), value: `₹${((kpis?.monthlyExpenses || 0) / 1000).toFixed(1)}K`, icon: TrendingDown, color: '#f43f5e', trend: 'down' as const, change: 'Expenses' },
-    { title: t('dashboard.pendingDues'), value: `₹${((kpis?.pendingFees || 0) / 1000).toFixed(1)}K`, icon: Clock, color: '#f59e0b', change: 'Outstanding dues', href: '/receipts' },
-    { title: t('sidebar.donations'), value: `₹${((kpis?.monthlyDonations || 0) / 1000).toFixed(1)}K`, icon: Heart, color: '#ec4899', trend: 'up' as const, change: 'This month', href: '/donations' },
-    { title: t('sidebar.zakat'), value: `₹${((kpis?.zakatCollected || 0) / 1000).toFixed(1)}K`, icon: Zap, color: '#14b8a6', change: 'This year', href: '/sadaqah' },
+    { title: t('dashboard.monthlyCollection'), value: formatKpiCurrency(kpis?.monthlyIncome), icon: TrendingUp, color: '#059669', trend: 'up' as const, change: 'Income' },
+    { title: t('finance.expense'), value: formatKpiCurrency(kpis?.monthlyExpenses), icon: TrendingDown, color: '#f43f5e', trend: 'down' as const, change: 'Expenses' },
+    { title: t('dashboard.pendingDues'), value: formatKpiCurrency(kpis?.pendingFees), icon: Clock, color: '#f59e0b', change: 'Outstanding dues', href: '/receipts' },
+    { title: t('sidebar.donations'), value: formatKpiCurrency(kpis?.monthlyDonations), icon: Heart, color: '#ec4899', trend: 'up' as const, change: 'This month', href: '/donations' },
+    { title: t('sidebar.zakat'), value: formatKpiCurrency(kpis?.zakatCollected), icon: Zap, color: '#14b8a6', change: 'All-time total', href: '/sadaqah' },
   ];
 
   const quickActions = [
