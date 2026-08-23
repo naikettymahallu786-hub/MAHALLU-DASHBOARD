@@ -55,7 +55,6 @@ const CATEGORIES = [
   { id: 'certificates', label: 'Certificates', icon: Award, color: '#0284c7', endpoint: '/reports/export/certificates' },
   { id: 'events', label: 'Events & Programs', icon: Calendar, color: '#7c3aed', endpoint: '/reports/export/events' },
   { id: 'death', label: 'Death & Burial', icon: Skull, color: '#64748b', endpoint: '/reports/export/death' },
-  { id: 'zakat', label: 'Sadaqah Distribution', icon: Zap, color: '#d97706', endpoint: '/reports/export/zakat' },
   { id: 'members', label: 'Member Census', icon: Users, color: '#3b82f6', endpoint: '/reports/export/members' },
   { id: 'academic', label: 'Madrasa Academic', icon: GraduationCap, color: '#8b5cf6', endpoint: '/reports/export/academic' },
 ];
@@ -431,31 +430,6 @@ export default function ReportsPage() {
                       <td className="px-6 py-4 font-semibold">{formatDate(d.dateOfDeath)}</td>
                       <td className="px-6 py-4 text-xs">{d.causeOfDeath || 'N/A'}</td>
                       <td className="px-6 py-4 text-xs font-semibold">{d.burialPlace || 'Mahallu Ground'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-
-            {activeTab === 'zakat' && (
-              <table className="w-full text-left text-sm">
-                <thead className="bg-muted/50 border-b text-xs uppercase tracking-wider text-muted-foreground font-bold">
-                  <tr>
-                    <th className="px-6 py-4">Year</th>
-                    <th className="px-6 py-4">Applicant Name</th>
-                    <th className="px-6 py-4">Requested</th>
-                    <th className="px-6 py-4">Approved</th>
-                    <th className="px-6 py-4">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {records.map((z: any, idx: number) => (
-                    <tr key={idx} className="hover:bg-muted/30">
-                      <td className="px-6 py-4 font-bold">{z.year}</td>
-                      <td className="px-6 py-4"><div className="font-bold">{z.memberName}</div><div className="text-xs text-muted-foreground">{z.phone}</div></td>
-                      <td className="px-6 py-4 font-bold">{formatCurrency(z.amountRequested)}</td>
-                      <td className="px-6 py-4 font-extrabold text-emerald-600">{formatCurrency(z.amountApproved)}</td>
-                      <td className="px-6 py-4"><span className="capitalize px-2.5 py-1 rounded-full text-xs font-bold bg-muted">{z.status}</span></td>
                     </tr>
                   ))}
                 </tbody>
