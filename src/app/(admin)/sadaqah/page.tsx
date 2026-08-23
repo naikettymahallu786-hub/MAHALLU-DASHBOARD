@@ -20,7 +20,11 @@ export default function SadaqahPage() {
   const [isCollectModalOpen, setIsCollectModalOpen] = useState(false);
 
   // New Sadaqah Form State
+  const [donorType, setDonorType] = useState<'member' | 'external'>('member');
   const [selectedMemberId, setSelectedMemberId] = useState('');
+  const [externalName, setExternalName] = useState('');
+  const [externalPhone, setExternalPhone] = useState('');
+  const [externalPlace, setExternalPlace] = useState('');
   const [amount, setAmount] = useState('');
   const [sadaqahCategory, setSadaqahCategory] = useState('General Sadaqah');
   const [description, setDescription] = useState('');
@@ -51,7 +55,7 @@ export default function SadaqahPage() {
 
   // Analytics
   const totalCollected = sadaqahList.reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
-  const totalContributors = new Set(sadaqahList.map((p: any) => p.headId || p.paidById?._id || p.headName)).size;
+  const totalContributors = new Set(sadaqahList.map((p: any) => p.headId || p.paidById?._id || p.headName || p.metadata?.donorName)).size;
 
   // Record Sadaqah Receipt Mutation
   const recordMutation = useMutation({
@@ -60,6 +64,9 @@ export default function SadaqahPage() {
       toast.success('Sadaqah receipt recorded successfully!');
       setIsCollectModalOpen(false);
       setSelectedMemberId('');
+      setExternalName('');
+      setExternalPhone('');
+      setExternalPlace('');
       setAmount('');
       setDescription('');
       queryClient.invalidateQueries({ queryKey: ['sadaqah-payments'] });
@@ -76,12 +83,24 @@ export default function SadaqahPage() {
       toast.error('Please enter a valid amount');
       return;
     }
+
+    if (donorType === 'external' && !externalName.trim()) {
+      toast.error('Please enter the donor name');
+      return;
+    }
+
+    const noteSuffix = donorType === 'external'
+      ? ` • (Donor: ${externalName.trim()}${externalPlace.trim() ? `, ${externalPlace.trim()}` : ''})`
+      : '';
+
     recordMutation.mutate({
       type: 'donation',
       amount: Number(amount),
-      paidById: selectedMemberId || undefined,
-      paidForId: selectedMemberId || undefined,
-      description: `[${sadaqahCategory}] ${description}`.trim(),
+      paidById: donorType === 'member' ? (selectedMemberId || undefined) : undefined,
+      paidForId: donorType === 'member' ? (selectedMemberId || undefined) : undefined,
+      donorName: donorType === 'external' ? externalName.trim() : undefined,
+      donorPhone: donorType === 'external' ? externalPhone.trim() : undefined,
+      description: `[${sadaqahCategory}] ${description.trim()}${noteSuffix}`.trim(),
       gateway: paymentGateway,
     });
   };
@@ -245,19 +264,38 @@ export default function SadaqahPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {sadaqahList.map((item: any, idx: number) => (
-                  <tr key={item._id || idx} className="hover:bg-muted/30">
-                    <td className="px-6 py-4 font-bold text-emerald-600">{item.receiptNo || `RCP-${idx + 1}`}</td>
-                    <td className="px-6 py-4 font-semibold">{formatDate(item.createdAt || item.date)}</td>
-                    <td className="px-6 py-4">
-                      <div className="font-bold">{item.headName || 'Anonymous Donor'}</div>
-                      <div className="text-xs text-muted-foreground">{item.phone}</div>
-                    </td>
-                    <td className="px-6 py-4 font-extrabold text-emerald-600">{formatCurrency(item.amount)}</td>
-                    <td className="px-6 py-4 capitalize text-xs font-bold">{item.gateway || 'cash'}</td>
-                    <td className="px-6 py-4 text-xs text-muted-foreground">{item.description || 'General Sadaqah'}</td>
-                  </tr>
-                ))}
+                {sadaqahList.map((item: any, idx: number) => {
+                  const isExternal = item.metadata?.isExternalDonor || item.description?.includes('(Donor: ') || (!item.paidById && item.metadata?.donorName);
+                  const extName = item.metadata?.donorName || item.donorName || item.description?.match(/\(Donor:\s*([^,)]+)/)?.[1];
+                  const donorDisplay = extName || item.headName || item.paidById?.name || 'Anonymous Donor';
+
+                  return (
+                    <tr key={item._id || idx} className="hover:bg-muted/30 transition-colors">
+                      <td className="px-6 py-4 font-bold text-emerald-600">{item.receiptNo || `RCP-${idx + 1}`}</td>
+                      <td className="px-6 py-4 font-semibold">{formatDate(item.createdAt || item.date)}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-foreground">{donorDisplay}</span>
+                          {isExternal ? (
+                            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 border border-amber-500/20">
+                              Non-Family / Guest
+                            </span>
+                          ) : item.paidById?.name ? (
+                            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                              Member
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {item.metadata?.donorPhone || item.phone || (isExternal ? 'Outside Contributor' : 'General Donor')}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 font-extrabold text-emerald-600">{formatCurrency(item.amount)}</td>
+                      <td className="px-6 py-4 capitalize text-xs font-bold">{item.gateway || 'cash'}</td>
+                      <td className="px-6 py-4 text-xs text-muted-foreground">{item.description || 'General Sadaqah'}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -270,7 +308,7 @@ export default function SadaqahPage() {
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-card border border-border rounded-3xl p-6 w-full max-w-lg shadow-2xl space-y-4"
+            className="bg-card border border-border rounded-3xl p-6 w-full max-w-lg shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
           >
             <div className="flex items-center justify-between border-b pb-3">
               <h2 className="font-bold text-lg text-foreground flex items-center gap-2">
@@ -283,18 +321,89 @@ export default function SadaqahPage() {
             </div>
 
             <form onSubmit={handleRecordSadaqah} className="space-y-4">
+              {/* Donor Source Selector */}
               <div>
-                <label className="block text-xs font-semibold mb-1">Select Donor Member (Optional)</label>
-                <SearchableSelect
-                  options={members.map((m: any) => ({
-                    value: m._id,
-                    label: `${m.name} ${m.memberId ? `(${m.memberId})` : ''} ${m.phone ? `- 📞 ${m.phone}` : ''}`,
-                  }))}
-                  value={selectedMemberId}
-                  onChange={setSelectedMemberId}
-                  placeholder="-- Choose Member or Leave Blank for Anonymous --"
-                />
+                <label className="block text-xs font-semibold mb-1.5 text-muted-foreground uppercase tracking-wider">
+                  Donor Source / വിഭാഗം
+                </label>
+                <div className="grid grid-cols-2 gap-2 p-1 bg-muted/50 rounded-2xl border border-border">
+                  <button
+                    type="button"
+                    onClick={() => setDonorType('member')}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all ${
+                      donorType === 'member'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    👥 Mahallu Member / Family
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDonorType('external')}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all ${
+                      donorType === 'external'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    👤 Non-Family / External Donor
+                  </button>
+                </div>
               </div>
+
+              {donorType === 'member' ? (
+                <div>
+                  <label className="block text-xs font-semibold mb-1">Select Donor Member (Optional)</label>
+                  <SearchableSelect
+                    options={members.map((m: any) => ({
+                      value: m._id,
+                      label: `${m.name} ${m.memberId ? `(${m.memberId})` : ''} ${m.phone ? `- 📞 ${m.phone}` : ''}`,
+                    }))}
+                    value={selectedMemberId}
+                    onChange={setSelectedMemberId}
+                    placeholder="-- Choose Member or Leave Blank for Anonymous --"
+                  />
+                </div>
+              ) : (
+                <div className="space-y-3 p-3.5 bg-muted/20 border border-border rounded-2xl">
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">
+                      Donor Full Name (ദാതാവിന്റെ പേര്) *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Muhammed Kutty / Guest Donor"
+                      value={externalName}
+                      onChange={(e) => setExternalName(e.target.value)}
+                      required={donorType === 'external'}
+                      className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-sm font-medium"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="block text-xs font-semibold mb-1">Phone Number (ഓപ്ഷണൽ)</label>
+                      <input
+                        type="tel"
+                        placeholder="e.g. 9876543210"
+                        value={externalPhone}
+                        onChange={(e) => setExternalPhone(e.target.value)}
+                        className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold mb-1">Place / Town (സ്ഥലം)</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Kozhikode / Dubai"
+                        value={externalPlace}
+                        onChange={(e) => setExternalPlace(e.target.value)}
+                        className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-semibold mb-1">Sadaqah Category / Purpose</label>
