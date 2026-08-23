@@ -199,7 +199,7 @@ export default function ReportsPage() {
             </button>
 
             <button
-              onClick={handleExportExcel}
+              onClick={handleDownloadCSV}
               disabled={isDownloading}
               className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer"
             >
