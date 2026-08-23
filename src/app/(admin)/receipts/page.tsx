@@ -51,15 +51,23 @@ export default function ReceiptsPage() {
     onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed to create receipt')
   });
 
+  const getDonorOrPayerName = (receipt: any) => {
+    const payment = receipt?.paymentId;
+    if (payment?.metadata?.donorName) return payment.metadata.donorName;
+    if (receipt?.metadata?.donorName) return receipt.metadata.donorName;
+    const match = payment?.description?.match(/\(Donor:\s*([^,)]+)/);
+    if (match) return match[1].trim();
+    if (payment?.metadata?.name) return payment.metadata.name;
+    if (payment?.paidForId?.name && !payment?.metadata?.isExternalDonor) return payment.paidForId.name;
+    if (payment?.paidById?.name && !payment?.metadata?.isExternalDonor) return payment.paidById.name;
+    const m = members.find((mem: any) => mem._id === (payment?.paidForId?._id || payment?.paidForId || payment?.paidById?._id || payment?.paidById));
+    if (m && !payment?.metadata?.isExternalDonor) return m.name;
+    return payment?.paidForId?.name || payment?.paidById?.name || 'Mahallu Contributor';
+  };
+
   const handlePrint = (receipt: any) => {
     const payment = receipt.paymentId;
-    const memberName = payment?.paidForId?.name || 
-                       payment?.paidById?.name || 
-                       payment?.metadata?.donorName ||
-                       payment?.metadata?.name ||
-                       receipt.metadata?.donorName ||
-                       members.find((m: any) => m._id === (payment?.paidForId?._id || payment?.paidForId || payment?.paidById?._id || payment?.paidById))?.name || 
-                       'Mahallu Member';
+    const memberName = getDonorOrPayerName(receipt);
     const category = payment?.metadata?.category || 
                      payment?.description?.match(/^\[(.*?)\]/)?.[1] || 
                      (payment?.type ? payment.type.replace(/_/g, ' ') : 'General');
@@ -356,13 +364,7 @@ export default function ReceiptsPage() {
                   <div className="flex justify-between text-sm">
                     <span className="font-semibold text-muted-foreground">Received From:</span>
                     <span className="font-bold text-foreground">
-                      {selectedReceiptForView.paymentId?.paidForId?.name || 
-                       selectedReceiptForView.paymentId?.paidById?.name || 
-                       selectedReceiptForView.paymentId?.metadata?.donorName ||
-                       selectedReceiptForView.paymentId?.metadata?.name ||
-                       selectedReceiptForView.metadata?.donorName ||
-                       members.find((m: any) => m._id === (selectedReceiptForView.paymentId?.paidForId?._id || selectedReceiptForView.paymentId?.paidForId || selectedReceiptForView.paymentId?.paidById?._id || selectedReceiptForView.paymentId?.paidById))?.name || 
-                       'Mahallu Member'}
+                      {getDonorOrPayerName(selectedReceiptForView)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
