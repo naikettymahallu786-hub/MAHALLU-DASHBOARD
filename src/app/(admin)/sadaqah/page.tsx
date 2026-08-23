@@ -336,7 +336,9 @@ export default function SadaqahPage() {
                 {sadaqahList.map((item: any, idx: number) => {
                   const isExternal = item.metadata?.isExternalDonor || item.description?.includes('(Donor: ') || (!item.paidById && item.metadata?.donorName);
                   const extName = item.metadata?.donorName || item.donorName || item.description?.match(/\(Donor:\s*([^,)]+)/)?.[1];
-                  const donorDisplay = extName || item.headName || item.paidById?.name || 'Anonymous Donor';
+                  const resolvedName = item.payerName && item.payerName !== 'N/A' && item.payerName !== 'Anonymous Donor' ? item.payerName : null;
+                  const donorDisplay = extName || resolvedName || item.headName || item.paidById?.name || 'Anonymous Donor';
+                  const phoneDisplay = item.payerPhone && item.payerPhone !== 'N/A' ? item.payerPhone : (item.phone && item.phone !== 'N/A' ? item.phone : item.metadata?.donorPhone);
                   const category = item.metadata?.category || item.description?.match(/^\[(.*?)\]/)?.[1] || 'General Sadaqah';
                   const cleanDesc = item.description?.replace(/^\[(.*?)\]\s*/, '') || '';
 
@@ -360,14 +362,14 @@ export default function SadaqahPage() {
                             <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 border border-amber-500/20">
                               Non-Family
                             </span>
-                          ) : item.paidById?.name ? (
+                          ) : donorDisplay !== 'Anonymous Donor' ? (
                             <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
                               Member
                             </span>
                           ) : null}
                         </div>
                         <div className="text-xs text-muted-foreground mt-0.5">
-                          {item.metadata?.donorPhone || item.phone || (isExternal ? 'Outside Contributor' : 'General Donor')}
+                          {phoneDisplay ? `📞 ${phoneDisplay}` : (isExternal ? 'Outside Contributor' : 'General Contributor')}
                         </div>
                       </td>
                       <td className="px-6 py-4">
