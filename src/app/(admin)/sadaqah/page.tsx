@@ -335,10 +335,16 @@ export default function SadaqahPage() {
               <tbody className="divide-y divide-border">
                 {sadaqahList.map((item: any, idx: number) => {
                   const isExternal = item.metadata?.isExternalDonor || item.description?.includes('(Donor: ') || (!item.paidById && item.metadata?.donorName);
-                  const extName = item.metadata?.donorName || item.donorName || item.description?.match(/\(Donor:\s*([^,)]+)/)?.[1];
+                  const descDonorMatch = item.description?.match(/\(Donor:\s*([^,)]+)/)?.[1];
+                  const extName = item.metadata?.donorName || item.donorName || descDonorMatch;
                   const resolvedName = item.payerName && item.payerName !== 'N/A' && item.payerName !== 'Anonymous Donor' ? item.payerName : null;
                   const donorDisplay = extName || resolvedName || item.headName || item.paidById?.name || 'Anonymous Donor';
-                  const phoneDisplay = item.payerPhone && item.payerPhone !== 'N/A' ? item.payerPhone : (item.phone && item.phone !== 'N/A' ? item.phone : item.metadata?.donorPhone);
+                  
+                  const extPhone = item.metadata?.donorPhone || item.donorPhone;
+                  const phoneDisplay = extPhone 
+                    ? extPhone 
+                    : (!isExternal && item.payerPhone && item.payerPhone !== 'N/A' ? item.payerPhone : (item.phone && item.phone !== 'N/A' ? item.phone : ''));
+
                   const category = item.metadata?.category || item.description?.match(/^\[(.*?)\]/)?.[1] || 'General Sadaqah';
                   const cleanDesc = item.description?.replace(/^\[(.*?)\]\s*/, '') || '';
 
@@ -632,6 +638,8 @@ export default function SadaqahPage() {
                     <span className="font-bold text-foreground">
                       {selectedReceiptForView.metadata?.donorName ||
                        selectedReceiptForView.donorName ||
+                       selectedReceiptForView.description?.match(/\(Donor:\s*([^,)]+)/)?.[1] ||
+                       (selectedReceiptForView.payerName && selectedReceiptForView.payerName !== 'N/A' && selectedReceiptForView.payerName !== 'Anonymous Donor' ? selectedReceiptForView.payerName : null) ||
                        selectedReceiptForView.headName ||
                        selectedReceiptForView.paidById?.name ||
                        'Mahallu Well-wisher'}
@@ -640,6 +648,11 @@ export default function SadaqahPage() {
                       <span className="ml-2 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 border border-amber-500/20">
                         Non-Family
                       </span>
+                    )}
+                    {(selectedReceiptForView.metadata?.donorPhone || selectedReceiptForView.donorPhone || (!selectedReceiptForView.metadata?.isExternalDonor && selectedReceiptForView.payerPhone && selectedReceiptForView.payerPhone !== 'N/A')) && (
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        📞 {selectedReceiptForView.metadata?.donorPhone || selectedReceiptForView.donorPhone || selectedReceiptForView.payerPhone}
+                      </div>
                     )}
                   </div>
                 </div>
