@@ -1,7 +1,7 @@
 'use client';
 import { useForm, Controller } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Save, ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
@@ -10,12 +10,14 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 
 export default function NewDeathPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { register, handleSubmit, control } = useForm();
   const { data: members } = useQuery({ queryKey: ['members'], queryFn: () => apiClient.get('/members').then(r => r.data.data || []) });
 
   const createMutation = useMutation<any, any, any>({
     mutationFn: (data) => apiClient.post('/death', data),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['death'] });
       toast.success('Death registry entry added!');
       router.push('/death');
     },

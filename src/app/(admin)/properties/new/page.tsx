@@ -1,7 +1,7 @@
 'use client';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Save, ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
@@ -9,13 +9,15 @@ import { toast } from 'sonner';
 
 export default function NewPropertyPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { register, handleSubmit, watch } = useForm<any>({ defaultValues: { status: 'vacant', type: 'building' } });
-  
+
   const watchType = watch('type');
 
   const createMutation = useMutation<any, any, any>({
     mutationFn: (data) => apiClient.post('/properties', data),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['properties'] });
       toast.success('Property logged successfully');
       router.push('/properties');
     },

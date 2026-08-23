@@ -5,7 +5,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Save, ArrowLeft, Loader2, GraduationCap } from 'lucide-react';
 import Link from 'next/link';
@@ -28,6 +28,7 @@ type StudentForm = z.infer<typeof studentSchema>;
 
 export default function NewStudentPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const defaultClassId = searchParams.get('classId') || '';
 
@@ -55,6 +56,7 @@ export default function NewStudentPage() {
   const createMutation = useMutation({
     mutationFn: (data: StudentForm) => apiClient.post('/students', data),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['students'] });
       toast.success('Student admission completed successfully!');
       router.push('/students');
     },

@@ -2,7 +2,7 @@
 
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Save, ArrowLeft, Loader2, Plus, Trash2, Image as ImageIcon, Sparkles, FileText, CheckCircle2, Languages } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
@@ -21,6 +21,7 @@ const toBase64 = (file: File): Promise<string> =>
 
 export default function NewEventPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const templateIdParam = searchParams.get('templateId');
 
@@ -85,6 +86,7 @@ export default function NewEventPage() {
   const createMutation = useMutation({
     mutationFn: (data: any) => apiClient.post('/events', data),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
       toast.success('Community event created successfully!');
       router.push('/events');
     },

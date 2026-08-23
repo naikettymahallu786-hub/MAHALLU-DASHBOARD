@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Save, ArrowLeft, Loader2, Languages, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
@@ -11,6 +11,7 @@ import { translateToMalayalam } from '@/lib/translate';
 
 export default function NewNoticePage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { register, handleSubmit, setValue, watch } = useForm<any>({
     defaultValues: { title: '', body: '', channel: 'whatsapp', status: 'pending' },
   });
@@ -23,6 +24,7 @@ export default function NewNoticePage() {
   const createMutation = useMutation<any, any, any>({
     mutationFn: (data) => apiClient.post('/notices', data),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notices'] });
       toast.success('Notice published successfully!');
       router.push('/notices');
     },

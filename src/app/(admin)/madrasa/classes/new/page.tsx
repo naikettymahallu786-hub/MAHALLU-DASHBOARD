@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useRouter, usePathname } from 'next/navigation';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Save, ArrowLeft, Loader2, BookOpen, User, Home, GraduationCap, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
@@ -12,6 +12,7 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 
 export default function NewClassPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const pathname = usePathname();
   const isMadrasaPortal = pathname.startsWith('/madrasa-portal');
   const backUrl = isMadrasaPortal ? '/madrasa-portal/classes' : '/madrasa/classes';
@@ -73,6 +74,7 @@ export default function NewClassPage() {
       return apiClient.post('/classes', { ...data, teacherId: teacherId || undefined });
     },
     onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['madrasa-classes'] });
       const newClassId = res.data?.data?._id;
       toast.success('Madrasa class created successfully! (ക്ലാസ് വിജയകരമായി ചേർത്തു)');
       if (newClassId) {
@@ -101,7 +103,7 @@ export default function NewClassPage() {
       <div className="section-card border border-border shadow-sm">
         <form
           onSubmit={handleSubmit((d) => {
-            const formattedData = { ...d };
+            const formattedData: any = { ...d };
             if (typeof d.subjects === 'string' && d.subjects.trim()) {
               formattedData.subjects = d.subjects.split(',').map((s: string) => s.trim());
             } else {
