@@ -335,12 +335,18 @@ export default function FamiliesPage() {
                           </button>
                         </td>
                         <td>
-                          <code className="text-xs bg-muted px-2 py-0.5 rounded-md font-bold">{family.familyCode}</code>
+                          <Link href={`/families/${family._id}`}>
+                            <code className="text-xs bg-muted px-2 py-0.5 rounded-md font-bold text-emerald-600 hover:text-emerald-500 hover:underline cursor-pointer">
+                              {family.familyCode}
+                            </code>
+                          </Link>
                         </td>
                         <td>
-                          <span className="font-medium text-foreground">
-                            {family.headMemberId?.name || 'Unknown head'}
-                          </span>
+                          <Link href={family.headMemberId?._id ? `/members/${family.headMemberId._id}` : `/families/${family._id}`}>
+                            <span className="font-semibold text-foreground hover:text-emerald-600 hover:underline cursor-pointer">
+                              {family.headMemberId?.name || 'Unknown head'}
+                            </span>
+                          </Link>
                         </td>
                         <td className="text-muted-foreground text-sm">
                           {family.headMemberId?.phone || '—'}
