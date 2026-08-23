@@ -132,28 +132,28 @@ export default function DashboardPage() {
   const { data: kpis, isLoading: kpisLoading } = useQuery({
     queryKey: ['dashboard-kpis'],
     queryFn: () => apiClient.get('/dashboard/kpis').then(r => r.data.data),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60 * 1000,
   });
 
   // Income Expense Chart
   const { data: incomeExpenseRaw, isLoading: incomeLoading } = useQuery({
     queryKey: ['dashboard-income-expense'],
     queryFn: () => apiClient.get('/dashboard/charts/income-expense').then(r => r.data.data),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60 * 1000,
   });
 
   // Attendance Chart
   const { data: attendanceRaw, isLoading: attendanceLoading } = useQuery({
     queryKey: ['dashboard-attendance'],
     queryFn: () => apiClient.get('/dashboard/charts/attendance').then(r => r.data.data),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60 * 1000,
   });
 
   // Member Growth Chart
   const { data: memberGrowthRaw, isLoading: memberLoading } = useQuery({
     queryKey: ['dashboard-member-growth'],
     queryFn: () => apiClient.get('/dashboard/charts/member-growth').then(r => r.data.data),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60 * 1000,
   });
 
   // Process data for Recharts
