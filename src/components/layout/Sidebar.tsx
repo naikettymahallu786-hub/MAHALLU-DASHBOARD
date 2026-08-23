@@ -55,7 +55,6 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'death', label: 'Death & Burial', href: '/death', icon: Skull },
   { id: 'events', label: 'Events', href: '/events', icon: Calendar },
   { id: 'notices', label: 'Notices', href: '/notices', icon: Bell },
-  { id: 'whatsapp', label: 'WhatsApp', href: '/whatsapp', icon: MessageCircle },
   { id: 'reports', label: 'Reports Hub', href: '/reports', icon: BarChart3 },
   { id: 'settings', label: 'Settings', href: '/settings', icon: Settings },
 ];
