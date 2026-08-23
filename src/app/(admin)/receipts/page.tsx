@@ -60,6 +60,9 @@ export default function ReceiptsPage() {
                        receipt.metadata?.donorName ||
                        members.find((m: any) => m._id === (payment?.paidForId?._id || payment?.paidForId || payment?.paidById?._id || payment?.paidById))?.name || 
                        'Mahallu Member';
+    const category = payment?.metadata?.category || 
+                     payment?.description?.match(/^\[(.*?)\]/)?.[1] || 
+                     (payment?.type ? payment.type.replace(/_/g, ' ') : 'General');
     const amount = formatCurrency(payment?.amount || 0);
     const date = formatDate(receipt.createdAt);
     
@@ -87,12 +90,12 @@ export default function ReceiptsPage() {
         <body>
           <div class="header">
             <h1 class="title">MAHALLU ERP SYSTEM</h1>
-            <p class="subtitle">Official Payment Receipt</p>
+            <p class="subtitle">Official Payment Receipt • ഔദ്യോഗിക രസീത്</p>
           </div>
-          <div class="row"><div class="label">Receipt No:</div><div class="value">${receipt.receiptNo}</div></div>
+          <div class="row"><div class="label">Receipt No:</div><div class="value" style="font-weight: bold; color: #059669;">${receipt.receiptNo}</div></div>
           <div class="row"><div class="label">Date:</div><div class="value">${date}</div></div>
           <div class="row"><div class="label">Received From:</div><div class="value">${memberName}</div></div>
-          <div class="row"><div class="label">Payment Type:</div><div class="value" style="text-transform: capitalize;">${payment?.type?.replace('_', ' ') || 'General'}</div></div>
+          <div class="row"><div class="label">Category / ഇനം:</div><div class="value" style="font-weight: bold; color: #059669; text-transform: capitalize;">${category}</div></div>
           <div class="row"><div class="label">Payment Method:</div><div class="value" style="text-transform: capitalize;">${payment?.gateway || 'Cash'}</div></div>
           ${payment?.description ? `<div class="row"><div class="label">Description:</div><div class="value">${payment.description}</div></div>` : ''}
           

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Plus, Heart, DollarSign, UserCheck, Calendar, Download, Search, Filter, RefreshCw, HandHeart } from 'lucide-react';
+import { Plus, Heart, DollarSign, UserCheck, Calendar, Download, Search, Filter, RefreshCw, HandHeart, Printer } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -95,6 +95,7 @@ export default function SadaqahPage() {
 
     recordMutation.mutate({
       type: 'donation',
+      category: sadaqahCategory,
       amount: Number(amount),
       paidById: donorType === 'member' ? (selectedMemberId || undefined) : undefined,
       paidForId: donorType === 'member' ? (selectedMemberId || undefined) : undefined,
@@ -103,6 +104,71 @@ export default function SadaqahPage() {
       description: `[${sadaqahCategory}] ${description.trim()}${noteSuffix}`.trim(),
       gateway: paymentGateway,
     });
+  };
+
+  const handlePrintSadaqahReceipt = (item: any) => {
+    const extName = item.metadata?.donorName || item.donorName || item.description?.match(/\(Donor:\s*([^,)]+)/)?.[1];
+    const donorDisplay = extName || item.headName || item.paidById?.name || 'Mahallu Well-wisher';
+    const category = item.metadata?.category || item.description?.match(/^\[(.*?)\]/)?.[1] || 'General Sadaqah';
+    const amount = formatCurrency(item.amount || 0);
+    const date = formatDate(item.createdAt || item.date);
+    const receiptNo = item.receiptNo || 'RCP-SADAQAH';
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Receipt ${receiptNo}</title>
+          <style>
+            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #1e293b; max-width: 800px; margin: 0 auto; background: #fff; }
+            .container { border: 2px solid #059669; border-radius: 16px; padding: 30px; }
+            .header { text-align: center; border-bottom: 2px dashed #cbd5e1; padding-bottom: 20px; margin-bottom: 25px; }
+            .bismillah { font-size: 18px; color: #065f46; margin-bottom: 6px; font-weight: bold; }
+            .title { font-size: 24px; font-weight: 900; color: #047857; margin: 0 0 4px 0; }
+            .subtitle { color: #64748b; font-size: 13px; margin: 0; font-weight: 600; }
+            .badge { display: inline-block; background: #ecfdf5; color: #047857; font-size: 13px; font-weight: 800; padding: 5px 16px; border-radius: 20px; margin-top: 10px; border: 1px solid #a7f3d0; }
+            .row { display: flex; justify-content: space-between; margin-bottom: 14px; font-size: 14px; }
+            .label { font-weight: 700; color: #475569; width: 180px; }
+            .value { flex: 1; font-weight: 600; color: #0f172a; }
+            .amount-box { background: linear-gradient(135deg, #059669 0%, #047857 100%); color: #ffffff; padding: 18px 24px; text-align: center; border-radius: 12px; margin: 25px 0; }
+            .amount { font-size: 32px; font-weight: 900; margin: 0; }
+            .footer { margin-top: 30px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px; }
+            @media print { body { padding: 0; } }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <div class="bismillah">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
+              <h1 class="title">MAHALLU COMMUNITY PORTAL</h1>
+              <p class="subtitle">Official Sadaqah & Welfare Receipt • സ്വദഖ രസീത്</p>
+              <div class="badge">RECEIPT NO: ${receiptNo}</div>
+            </div>
+            <div class="row"><div class="label">Date / തീയതി:</div><div class="value">${date}</div></div>
+            <div class="row"><div class="label">Received From (ദാതാവ്):</div><div class="value">${donorDisplay}</div></div>
+            <div class="row"><div class="label">Category / ഇനം:</div><div class="value" style="font-weight: bold; color: #047857;">${category}</div></div>
+            <div class="row"><div class="label">Payment Mode (രീതി):</div><div class="value" style="text-transform: capitalize;">${item.gateway || 'Cash'}</div></div>
+            ${item.description ? `<div class="row"><div class="label">Notes / Purpose:</div><div class="value">${item.description}</div></div>` : ''}
+            
+            <div class="amount-box">
+              <p style="margin: 0 0 4px 0; font-size: 12px; text-transform: uppercase; font-weight: 700; color: #d1fae5;">Total Sadaqah Received</p>
+              <p class="amount">${amount}</p>
+            </div>
+            
+            <div class="footer">
+              <p>Jazakallah Khair for your generous contribution towards the Mahallu Welfare Fund.</p>
+              <p style="margin-top: 2px;">This is a verified computer generated receipt.</p>
+            </div>
+          </div>
+          <script>
+            window.onload = function() { window.print(); }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   const handleExportCSV = async () => {
@@ -258,9 +324,11 @@ export default function SadaqahPage() {
                   <th className="px-6 py-4">Receipt #</th>
                   <th className="px-6 py-4">Date</th>
                   <th className="px-6 py-4">Donor Name</th>
+                  <th className="px-6 py-4">Category / ഇനം</th>
                   <th className="px-6 py-4">Amount</th>
                   <th className="px-6 py-4">Method</th>
-                  <th className="px-6 py-4">Notes / Purpose</th>
+                  <th className="px-6 py-4">Notes</th>
+                  <th className="px-6 py-4 text-right">Receipt</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -268,6 +336,8 @@ export default function SadaqahPage() {
                   const isExternal = item.metadata?.isExternalDonor || item.description?.includes('(Donor: ') || (!item.paidById && item.metadata?.donorName);
                   const extName = item.metadata?.donorName || item.donorName || item.description?.match(/\(Donor:\s*([^,)]+)/)?.[1];
                   const donorDisplay = extName || item.headName || item.paidById?.name || 'Anonymous Donor';
+                  const category = item.metadata?.category || item.description?.match(/^\[(.*?)\]/)?.[1] || 'General Sadaqah';
+                  const cleanDesc = item.description?.replace(/^\[(.*?)\]\s*/, '') || '';
 
                   return (
                     <tr key={item._id || idx} className="hover:bg-muted/30 transition-colors">
@@ -278,7 +348,7 @@ export default function SadaqahPage() {
                           <span className="font-bold text-foreground">{donorDisplay}</span>
                           {isExternal ? (
                             <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 border border-amber-500/20">
-                              Non-Family / Guest
+                              Non-Family
                             </span>
                           ) : item.paidById?.name ? (
                             <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
@@ -290,9 +360,25 @@ export default function SadaqahPage() {
                           {item.metadata?.donorPhone || item.phone || (isExternal ? 'Outside Contributor' : 'General Donor')}
                         </div>
                       </td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                          {category}
+                        </span>
+                      </td>
                       <td className="px-6 py-4 font-extrabold text-emerald-600">{formatCurrency(item.amount)}</td>
                       <td className="px-6 py-4 capitalize text-xs font-bold">{item.gateway || 'cash'}</td>
-                      <td className="px-6 py-4 text-xs text-muted-foreground">{item.description || 'General Sadaqah'}</td>
+                      <td className="px-6 py-4 text-xs text-muted-foreground max-w-[200px] truncate" title={cleanDesc}>
+                        {cleanDesc || '—'}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button
+                          onClick={() => handlePrintSadaqahReceipt(item)}
+                          className="p-2 rounded-xl bg-muted/60 hover:bg-emerald-600 hover:text-white transition-all text-muted-foreground"
+                          title="Print Official Receipt"
+                        >
+                          <Printer className="h-4 w-4" />
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
