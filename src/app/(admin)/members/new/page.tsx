@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Save, ArrowLeft, Loader2, Users } from 'lucide-react';
 import Link from 'next/link';
@@ -28,6 +28,7 @@ type MemberForm = z.infer<typeof memberSchema>;
 
 export default function NewMemberPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const { register, handleSubmit, formState: { errors } } = useForm<MemberForm>({
     resolver: zodResolver(memberSchema),
@@ -42,6 +43,8 @@ export default function NewMemberPage() {
   const createMutation = useMutation({
     mutationFn: (data: MemberForm) => apiClient.post('/members', data),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      queryClient.invalidateQueries({ queryKey: ['member-stats'] });
       toast.success('Member added successfully!');
       router.push('/members');
     },

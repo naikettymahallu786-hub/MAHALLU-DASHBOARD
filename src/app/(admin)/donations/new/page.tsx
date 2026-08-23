@@ -1,7 +1,7 @@
 'use client';
 import { useForm, Controller } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Save, ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
@@ -14,6 +14,7 @@ import { useState } from 'react';
 export default function NewDonationPage() {
   const { t } = useTranslation();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [customCampaignActive, setCustomCampaignActive] = useState(false);
   const { register, handleSubmit, setValue, control, watch } = useForm<any>({ defaultValues: { isAnonymous: false, campaign: 'General Sadaqah' } });
 
@@ -25,6 +26,8 @@ export default function NewDonationPage() {
   const createMutation = useMutation({
     mutationFn: (data) => apiClient.post('/donations', data),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['donations'] });
+      queryClient.invalidateQueries({ queryKey: ['receipts'] });
       toast.success('Donation entry logged!');
       router.push('/donations');
     },
