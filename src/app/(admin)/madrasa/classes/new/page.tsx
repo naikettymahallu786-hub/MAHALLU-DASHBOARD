@@ -101,7 +101,7 @@ export default function NewClassPage() {
       <div className="section-card border border-border shadow-sm">
         <form
           onSubmit={handleSubmit((d) => {
-            const formattedData = { ...d };
+            const formattedData: any = { ...d };
             if (typeof d.subjects === 'string' && d.subjects.trim()) {
               formattedData.subjects = d.subjects.split(',').map((s: string) => s.trim());
             } else {
