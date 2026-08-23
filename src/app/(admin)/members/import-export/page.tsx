@@ -233,7 +233,7 @@ export default function ImportExportPage() {
             </div>
             <h2 className="text-lg font-semibold text-foreground">1. Download Demo Template</h2>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Get an official Excel sample pre-formatted with required headers (Mahallu Code, Family Code, Address, Email, Password, Name, Gender, Phone, Relationship).
+              Get an official Excel sample pre-formatted with required headers (Family Code, Address, Email, Password, Name, Gender, Phone, Relationship).
             </p>
           </div>
           <button

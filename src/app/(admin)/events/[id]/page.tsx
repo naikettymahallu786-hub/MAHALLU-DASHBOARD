@@ -140,6 +140,89 @@ export default function EventDetailsPage() {
         </div>
       </motion.div>
 
+      {/* Program Schedule & Sessions */}
+      {event.programSchedule && event.programSchedule.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="section-card space-y-4"
+        >
+          <div className="flex items-center justify-between border-b border-border/50 pb-4 mb-2">
+            <h3 className="font-bold text-lg flex items-center gap-2">
+              <Calendar size={20} className="text-emerald-600" />
+              Program Sessions Schedule (പ്രോഗ്രാം സെഷനുകൾ)
+            </h3>
+            <span className="text-xs font-bold px-3 py-1 bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 rounded-full border border-emerald-200">
+              {event.programSchedule.length} Sessions
+            </span>
+          </div>
+
+          <div className="space-y-4">
+            {event.programSchedule.map((session: any, idx: number) => (
+              <div
+                key={idx}
+                className="bg-card border-2 border-emerald-500/20 rounded-2xl p-5 shadow-sm space-y-3"
+              >
+                <div className="flex flex-wrap items-center justify-between border-b pb-2.5 gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-7 h-7 rounded-full bg-emerald-600 text-white text-xs font-black flex items-center justify-center">
+                      {session.dayNumber || idx + 1}
+                    </span>
+                    <span className="font-extrabold text-emerald-800 dark:text-emerald-300 text-sm">
+                      {session.dateText || `Session ${idx + 1}`}
+                    </span>
+                  </div>
+                  {session.sessionTime && (
+                    <span className="bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 text-xs font-black px-3 py-1 rounded-full border border-amber-300">
+                      ⏰ {session.sessionTime}
+                    </span>
+                  )}
+                </div>
+
+                <h4 className="text-lg font-black text-emerald-900 dark:text-emerald-100">
+                  {session.sessionTitle || 'സെഷൻ ശീർഷകം'}
+                </h4>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                  {session.president && (
+                    <div className="bg-amber-50/70 dark:bg-slate-900 p-2.5 rounded-xl border border-amber-200 dark:border-slate-700">
+                      <span className="font-bold text-amber-800 dark:text-amber-400 block">അധ്യക്ഷൻ:</span>
+                      <span className="font-extrabold text-slate-800 dark:text-slate-200">{session.president}</span>
+                    </div>
+                  )}
+                  {session.inaugurator && (
+                    <div className="bg-emerald-50/70 dark:bg-slate-900 p-2.5 rounded-xl border border-emerald-200 dark:border-slate-700">
+                      <span className="font-bold text-emerald-800 dark:text-emerald-400 block">ഉദ്ഘാടനം:</span>
+                      <span className="font-extrabold text-slate-800 dark:text-slate-200">{session.inaugurator}</span>
+                    </div>
+                  )}
+                  {session.keynoteSpeaker && (
+                    <div className="md:col-span-2 bg-rose-50/70 dark:bg-slate-900 p-2.5 rounded-xl border border-rose-200 dark:border-slate-700">
+                      <span className="font-bold text-rose-800 dark:text-rose-400 block">മുഖ്യ പ്രഭാഷണം:</span>
+                      <span className="font-extrabold text-slate-900 dark:text-slate-100">{session.keynoteSpeaker}</span>
+                    </div>
+                  )}
+                  {session.chiefGuests && (
+                    <div className="md:col-span-2 bg-blue-50/70 dark:bg-slate-900 p-2.5 rounded-xl border border-blue-200 dark:border-slate-700">
+                      <span className="font-bold text-blue-800 dark:text-blue-400 block">വിശിഷ്ട അതിഥികൾ:</span>
+                      <span className="font-extrabold text-slate-800 dark:text-slate-200">{session.chiefGuests}</span>
+                    </div>
+                  )}
+                </div>
+
+                {(session.voteOfThanks || session.notes) && (
+                  <div className="flex flex-wrap items-center justify-between text-xs pt-2 border-t text-muted-foreground font-semibold">
+                    {session.voteOfThanks && <span>നന്ദി: {session.voteOfThanks}</span>}
+                    {session.notes && <span className="text-emerald-600 font-bold">✨ {session.notes}</span>}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
       {/* Committee Members */}
       <motion.div
         initial={{ opacity: 0, y: 15 }}

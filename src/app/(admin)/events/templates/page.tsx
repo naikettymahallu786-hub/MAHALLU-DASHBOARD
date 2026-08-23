@@ -33,23 +33,23 @@ export default function EventTemplatesPage() {
   const [editingTemplate, setEditingTemplate] = useState<any | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  // Form State for Template Creation/Editing
+  // Form State for Template Creation/Editing (Direct Blueprint / Demo)
   const [templateName, setTemplateName] = useState('');
   const [templateCategory, setTemplateCategory] = useState('Religious Conference');
   const [isCustomCategoryMode, setIsCustomCategoryMode] = useState(false);
   const [customCategoryInput, setCustomCategoryInput] = useState('');
+  const [templateVenue, setTemplateVenue] = useState('');
+  const [templateBannerUrl, setTemplateBannerUrl] = useState('');
   const [templateDesc, setTemplateDesc] = useState('');
   const [noticeText, setNoticeText] = useState('');
-  const [variables, setVariables] = useState<any[]>([
-    { key: 'EVENT_TITLE', label: 'Event Title / പരിപാടി ശീർഷകം', defaultValue: 'വാർഷിക സമ്മേളനം' },
-    { key: 'VENUE', label: 'Venue / സ്ഥലം', defaultValue: 'മഖാം ജുമാ മസ്ജിദ് അങ്കണം' },
-  ]);
   const [scheduleItems, setScheduleItems] = useState<any[]>([
     {
       dayNumber: 1,
       dateText: '30 ഏപ്രിൽ',
       sessionTime: '8.00 PM',
       sessionTitle: 'മത പ്രഭാഷണം',
+      president: 'മഹല്ല് പ്രസിഡന്റ്',
+      inaugurator: 'സയ്യിദ് തങ്ങൾ',
       keynoteSpeaker: 'ഉസ്താദ് കെ. ബഷീർ ബാഖവി',
       voteOfThanks: 'കൺവീനർ',
     },
@@ -109,11 +109,10 @@ export default function EventTemplatesPage() {
     setTemplateCategory('Religious Conference');
     setIsCustomCategoryMode(false);
     setCustomCategoryInput('');
+    setTemplateVenue('');
+    setTemplateBannerUrl('');
     setTemplateDesc('');
     setNoticeText('');
-    setVariables([
-      { key: 'EVENT_TITLE', label: 'Event Title / പരിപാടി ശീർഷകം', defaultValue: 'വാർഷിക സമ്മേളനം' },
-    ]);
     setScheduleItems([]);
   };
 
@@ -123,9 +122,10 @@ export default function EventTemplatesPage() {
     setTemplateCategory(t.category || 'Religious Conference');
     setIsCustomCategoryMode(false);
     setCustomCategoryInput('');
+    setTemplateVenue(t.venue || '');
+    setTemplateBannerUrl(t.bannerUrl || '');
     setTemplateDesc(t.description || '');
     setNoticeText(t.noticeTemplateText || '');
-    setVariables(t.variables || []);
     setScheduleItems(t.programSchedule || []);
     setIsCreateModalOpen(true);
   };
@@ -141,9 +141,10 @@ export default function EventTemplatesPage() {
     saveMutation.mutate({
       name: templateName,
       category: finalCategory,
+      venue: templateVenue,
+      bannerUrl: templateBannerUrl,
       description: templateDesc,
       noticeTemplateText: noticeText,
-      variables,
       programSchedule: scheduleItems,
     });
   };
@@ -243,12 +244,14 @@ export default function EventTemplatesPage() {
                   {template.description || 'Pre-configured event template with Malayalam variables and session schedule.'}
                 </p>
 
-                {/* Variable Badges */}
+                {/* Badges */}
                 <div className="flex flex-wrap gap-1.5 pt-2">
-                  <span className="text-[10px] font-bold px-2 py-1 bg-muted rounded-lg text-foreground">
-                    ⚡ {template.variables?.length || 0} Dynamic Variables
-                  </span>
-                  <span className="text-[10px] font-bold px-2 py-1 bg-muted rounded-lg text-foreground">
+                  {template.venue && (
+                    <span className="text-[10px] font-bold px-2 py-1 bg-muted rounded-lg text-foreground">
+                      📍 {template.venue}
+                    </span>
+                  )}
+                  <span className="text-[10px] font-bold px-2 py-1 bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 rounded-lg">
                     📅 {template.programSchedule?.length || 0} Program Sessions
                   </span>
                 </div>
@@ -432,304 +435,440 @@ export default function EventTemplatesPage() {
         )}
       </AnimatePresence>
 
-      {/* Create / Edit Template Modal */}
+      {/* Create / Edit Template Modal with Live Side-by-Side Preview */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 md:p-6 overflow-y-auto">
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-card border border-border rounded-3xl p-6 w-full max-w-3xl shadow-2xl space-y-6 my-8"
+            className="bg-card border border-border rounded-3xl w-full max-w-7xl shadow-2xl overflow-hidden my-4 flex flex-col max-h-[92vh]"
           >
-            <div className="flex items-center justify-between border-b pb-4">
-              <h2 className="font-extrabold text-xl text-foreground flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-emerald-600" />
-                {editingTemplate ? 'Edit Event Template' : 'Create New Event Template'}
-              </h2>
-              <button onClick={() => setIsCreateModalOpen(false)} className="text-muted-foreground hover:text-foreground">
-                <X size={20} />
-              </button>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b px-6 py-4 bg-muted/30">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600">
+                  <Sparkles className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="font-black text-lg md:text-xl text-foreground">
+                    {editingTemplate ? 'Edit Event Template' : 'Create New Event Template'}
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    Configure details on the left, live preview renders instantly on the right.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] font-extrabold text-emerald-600">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Live Preview Active
+                </span>
+                <button
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
             </div>
 
-            <form onSubmit={handleSubmitForm} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold mb-1">Template Name *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. 3-Day Islamic Conference & Uroos Notice"
-                    value={templateName}
-                    onChange={(e) => setTemplateName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-background border rounded-xl text-sm"
-                  />
-                </div>
+            {/* Split Screen Body */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 flex-1 overflow-hidden">
+              {/* LEFT COLUMN: Form Editor */}
+              <div className="lg:col-span-6 xl:col-span-6 border-b lg:border-b-0 lg:border-r overflow-y-auto p-6 space-y-6 max-h-[75vh]">
+                <form id="templateForm" onSubmit={handleSubmitForm} className="space-y-6">
+                  {/* Basic Details */}
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-black text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
+                      1. Basic Information (അടിസ്ഥാന വിവരങ്ങൾ)
+                    </h3>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-bold mb-1 text-foreground">Template Name *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. 3-Day Islamic Conference & Uroos Notice"
+                          value={templateName}
+                          onChange={(e) => setTemplateName(e.target.value)}
+                          className="w-full px-3.5 py-2.5 bg-background border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-emerald-500 outline-none"
+                        />
+                      </div>
 
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-bold">Category</label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsCustomCategoryMode(!isCustomCategoryMode);
-                        if (!isCustomCategoryMode) setCustomCategoryInput('');
-                      }}
-                      className="text-[10px] font-bold text-emerald-600 hover:underline cursor-pointer"
-                    >
-                      {isCustomCategoryMode ? 'Choose from list' : '+ Create Custom Category'}
-                    </button>
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-bold text-foreground">Category</label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsCustomCategoryMode(!isCustomCategoryMode);
+                              if (!isCustomCategoryMode) setCustomCategoryInput('');
+                            }}
+                            className="text-[10px] font-bold text-emerald-600 hover:underline cursor-pointer"
+                          >
+                            {isCustomCategoryMode ? 'Choose from list' : '+ Create Custom Category'}
+                          </button>
+                        </div>
+
+                        {!isCustomCategoryMode ? (
+                          <select
+                            value={templateCategory}
+                            onChange={(e) => {
+                              if (e.target.value === '__create_custom__') {
+                                setIsCustomCategoryMode(true);
+                                setCustomCategoryInput('');
+                              } else {
+                                setTemplateCategory(e.target.value);
+                              }
+                            }}
+                            className="w-full px-3.5 py-2.5 bg-background border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-emerald-500 outline-none"
+                          >
+                            {allCategories.map((cat) => (
+                              <option key={cat} value={cat}>
+                                {cat}
+                              </option>
+                            ))}
+                            <option value="__create_custom__">+ Create New Custom Category...</option>
+                          </select>
+                        ) : (
+                          <input
+                            type="text"
+                            autoFocus
+                            required
+                            placeholder="Type custom category (e.g. Uroos Mubarak, Youth Fest...)"
+                            value={customCategoryInput}
+                            onChange={(e) => setCustomCategoryInput(e.target.value)}
+                            className="w-full px-3.5 py-2.5 bg-background border-2 border-emerald-500 rounded-xl text-sm font-bold outline-none"
+                          />
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-bold mb-1 text-foreground">Default Venue (സ്ഥലം)</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. മഖാം ജുമാ മസ്ജിദ് അങ്കണം"
+                            value={templateVenue}
+                            onChange={(e) => setTemplateVenue(e.target.value)}
+                            className="w-full px-3.5 py-2.5 bg-background border rounded-xl text-sm"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold mb-1 text-foreground">Banner / Poster Image URL</label>
+                          <input
+                            type="text"
+                            placeholder="https://example.com/poster.jpg"
+                            value={templateBannerUrl}
+                            onChange={(e) => setTemplateBannerUrl(e.target.value)}
+                            className="w-full px-3.5 py-2.5 bg-background border rounded-xl text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold mb-1 text-foreground">Short Description</label>
+                        <input
+                          type="text"
+                          placeholder="Short purpose of this event template"
+                          value={templateDesc}
+                          onChange={(e) => setTemplateDesc(e.target.value)}
+                          className="w-full px-3.5 py-2.5 bg-background border rounded-xl text-sm"
+                        />
+                      </div>
+                    </div>
                   </div>
 
-                  {!isCustomCategoryMode ? (
-                    <select
-                      value={templateCategory}
-                      onChange={(e) => {
-                        if (e.target.value === '__create_custom__') {
-                          setIsCustomCategoryMode(true);
-                          setCustomCategoryInput('');
-                        } else {
-                          setTemplateCategory(e.target.value);
-                        }
-                      }}
-                      className="w-full px-3.5 py-2.5 bg-background border rounded-xl text-sm"
-                    >
-                      {allCategories.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                      <option value="__create_custom__">+ Create New Custom Category...</option>
-                    </select>
-                  ) : (
-                    <input
-                      type="text"
-                      autoFocus
-                      required
-                      placeholder="Type custom category name (e.g. Uroos Mubarak, Youth Fest...)"
-                      value={customCategoryInput}
-                      onChange={(e) => setCustomCategoryInput(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-background border-2 border-emerald-500 rounded-xl text-sm font-bold"
-                    />
-                  )}
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-xs font-bold mb-1">Description</label>
-                  <input
-                    type="text"
-                    placeholder="Short description of this template"
-                    value={templateDesc}
-                    onChange={(e) => setTemplateDesc(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-background border rounded-xl text-sm"
-                  />
-                </div>
-              </div>
-
-              {/* Dynamic Variables Section */}
-              <div className="space-y-3 border-t pt-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-extrabold text-foreground flex items-center gap-1.5">
-                    ⚡ Dynamic Variables (ടെംപ്ലേറ്റ് വേരിയബിളുകൾ)
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setVariables([...variables, { key: `VAR_${variables.length + 1}`, label: 'New Variable', defaultValue: '' }])
-                    }
-                    className="text-xs font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 px-3 py-1.5 rounded-xl border border-emerald-300 cursor-pointer"
-                  >
-                    + Add Variable
-                  </button>
-                </div>
-
-                <div className="space-y-2">
-                  {variables.map((v, i) => (
-                    <div key={i} className="flex gap-2 items-center bg-muted/50 p-2.5 rounded-2xl border">
-                      <input
-                        type="text"
-                        placeholder="Key (e.g. EVENT_TITLE)"
-                        value={v.key}
-                        onChange={(e) => {
-                          const updated = [...variables];
-                          updated[i].key = e.target.value;
-                          setVariables(updated);
-                        }}
-                        className="w-1/3 px-3 py-1.5 bg-background border rounded-xl text-xs font-bold"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Label (e.g. പരിപാടി ശീർഷകം)"
-                        value={v.label}
-                        onChange={(e) => {
-                          const updated = [...variables];
-                          updated[i].label = e.target.value;
-                          setVariables(updated);
-                        }}
-                        className="w-1/3 px-3 py-1.5 bg-background border rounded-xl text-xs"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Default value"
-                        value={v.defaultValue || ''}
-                        onChange={(e) => {
-                          const updated = [...variables];
-                          updated[i].defaultValue = e.target.value;
-                          setVariables(updated);
-                        }}
-                        className="w-1/3 px-3 py-1.5 bg-background border rounded-xl text-xs"
-                      />
+                  {/* Program Schedule Builder */}
+                  <div className="space-y-3 border-t pt-5">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-black text-emerald-800 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
+                        📅 3. Program Sessions (പ്രോഗ്രാം സെഷനുകൾ)
+                      </h3>
                       <button
                         type="button"
-                        onClick={() => setVariables(variables.filter((_, idx) => idx !== i))}
-                        className="text-rose-600 hover:text-rose-700 p-1"
+                        onClick={() =>
+                          setScheduleItems([
+                            ...scheduleItems,
+                            {
+                              dayNumber: scheduleItems.length + 1,
+                              dateText: '',
+                              sessionTime: '',
+                              sessionTitle: '',
+                              keynoteSpeaker: '',
+                            },
+                          ])
+                        }
+                        className="text-xs font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 px-3 py-1 rounded-xl border border-emerald-300 cursor-pointer"
                       >
-                        <X size={16} />
+                        + Add Session
                       </button>
                     </div>
-                  ))}
-                </div>
-              </div>
 
-              {/* Program Schedule Builder */}
-              <div className="space-y-3 border-t pt-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-extrabold text-foreground flex items-center gap-1.5">
-                    📅 Program Sessions Schedule Builder (പ്രോഗ്രാം സെഷനുകൾ)
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setScheduleItems([
-                        ...scheduleItems,
-                        {
-                          dayNumber: scheduleItems.length + 1,
-                          dateText: '',
-                          sessionTime: '',
-                          sessionTitle: '',
-                          keynoteSpeaker: '',
-                        },
-                      ])
-                    }
-                    className="text-xs font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 px-3 py-1.5 rounded-xl border border-emerald-300 cursor-pointer"
-                  >
-                    + Add Session Day
-                  </button>
-                </div>
-
-                <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-                  {scheduleItems.map((item, i) => (
-                    <div key={i} className="bg-muted/40 p-3 rounded-2xl border space-y-2 text-xs">
-                      <div className="flex items-center justify-between border-b pb-1 font-bold">
-                        <span>Session {i + 1}</span>
-                        <button
-                          type="button"
-                          onClick={() => setScheduleItems(scheduleItems.filter((_, idx) => idx !== i))}
-                          className="text-rose-600"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        <input
-                          type="text"
-                          placeholder="Date / Day Text (e.g. 30 ഏപ്രിൽ)"
-                          value={item.dateText || ''}
-                          onChange={(e) => {
-                            const updated = [...scheduleItems];
-                            updated[i].dateText = e.target.value;
-                            setScheduleItems(updated);
-                          }}
-                          className="px-2.5 py-1.5 bg-background border rounded-lg"
-                        />
-                        <input
-                          type="text"
-                          placeholder="Time (e.g. 8.00 PM)"
-                          value={item.sessionTime || ''}
-                          onChange={(e) => {
-                            const updated = [...scheduleItems];
-                            updated[i].sessionTime = e.target.value;
-                            setScheduleItems(updated);
-                          }}
-                          className="px-2.5 py-1.5 bg-background border rounded-lg"
-                        />
-                        <input
-                          type="text"
-                          placeholder="Session Title (e.g. മത പ്രഭാഷണം)"
-                          value={item.sessionTitle || ''}
-                          onChange={(e) => {
-                            const updated = [...scheduleItems];
-                            updated[i].sessionTitle = e.target.value;
-                            setScheduleItems(updated);
-                          }}
-                          className="px-2.5 py-1.5 bg-background border rounded-lg"
-                        />
-                        <input
-                          type="text"
-                          placeholder="President / അധ്യക്ഷൻ"
-                          value={item.president || ''}
-                          onChange={(e) => {
-                            const updated = [...scheduleItems];
-                            updated[i].president = e.target.value;
-                            setScheduleItems(updated);
-                          }}
-                          className="px-2.5 py-1.5 bg-background border rounded-lg"
-                        />
-                        <input
-                          type="text"
-                          placeholder="Inaugurator / ഉദ്ഘാടനം"
-                          value={item.inaugurator || ''}
-                          onChange={(e) => {
-                            const updated = [...scheduleItems];
-                            updated[i].inaugurator = e.target.value;
-                            setScheduleItems(updated);
-                          }}
-                          className="px-2.5 py-1.5 bg-background border rounded-lg"
-                        />
-                        <input
-                          type="text"
-                          placeholder="Keynote Speaker / പ്രഭാഷണം"
-                          value={item.keynoteSpeaker || ''}
-                          onChange={(e) => {
-                            const updated = [...scheduleItems];
-                            updated[i].keynoteSpeaker = e.target.value;
-                            setScheduleItems(updated);
-                          }}
-                          className="px-2.5 py-1.5 bg-background border rounded-lg"
-                        />
-                      </div>
+                    <div className="space-y-3">
+                      {scheduleItems.length === 0 ? (
+                        <div className="p-4 rounded-xl border border-dashed text-center text-xs text-muted-foreground">
+                          No sessions added yet. Click &quot;+ Add Session&quot; to build schedule.
+                        </div>
+                      ) : (
+                        scheduleItems.map((item, i) => (
+                          <div key={i} className="bg-muted/30 p-3.5 rounded-2xl border space-y-2.5 text-xs">
+                            <div className="flex items-center justify-between border-b pb-1.5 font-bold">
+                              <span className="text-emerald-800 dark:text-emerald-400">Session {i + 1}</span>
+                              <button
+                                type="button"
+                                onClick={() => setScheduleItems(scheduleItems.filter((_, idx) => idx !== i))}
+                                className="text-rose-500 hover:text-rose-700 font-bold"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                              <div>
+                                <label className="block text-[10px] text-muted-foreground mb-0.5">Date / Day</label>
+                                <input
+                                  type="text"
+                                  placeholder="e.g. 30 ഏപ്രിൽ"
+                                  value={item.dateText || ''}
+                                  onChange={(e) => {
+                                    const updated = [...scheduleItems];
+                                    updated[i].dateText = e.target.value;
+                                    setScheduleItems(updated);
+                                  }}
+                                  className="w-full px-2.5 py-1.5 bg-background border rounded-lg"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] text-muted-foreground mb-0.5">Time</label>
+                                <input
+                                  type="text"
+                                  placeholder="e.g. 8.00 PM"
+                                  value={item.sessionTime || ''}
+                                  onChange={(e) => {
+                                    const updated = [...scheduleItems];
+                                    updated[i].sessionTime = e.target.value;
+                                    setScheduleItems(updated);
+                                  }}
+                                  className="w-full px-2.5 py-1.5 bg-background border rounded-lg"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] text-muted-foreground mb-0.5">Session Title</label>
+                                <input
+                                  type="text"
+                                  placeholder="e.g. മത പ്രഭാഷണം"
+                                  value={item.sessionTitle || ''}
+                                  onChange={(e) => {
+                                    const updated = [...scheduleItems];
+                                    updated[i].sessionTitle = e.target.value;
+                                    setScheduleItems(updated);
+                                  }}
+                                  className="w-full px-2.5 py-1.5 bg-background border rounded-lg font-bold"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] text-muted-foreground mb-0.5">President</label>
+                                <input
+                                  type="text"
+                                  placeholder="അധ്യക്ഷൻ"
+                                  value={item.president || ''}
+                                  onChange={(e) => {
+                                    const updated = [...scheduleItems];
+                                    updated[i].president = e.target.value;
+                                    setScheduleItems(updated);
+                                  }}
+                                  className="w-full px-2.5 py-1.5 bg-background border rounded-lg"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] text-muted-foreground mb-0.5">Inauguration</label>
+                                <input
+                                  type="text"
+                                  placeholder="ഉദ്ഘാടനം"
+                                  value={item.inaugurator || ''}
+                                  onChange={(e) => {
+                                    const updated = [...scheduleItems];
+                                    updated[i].inaugurator = e.target.value;
+                                    setScheduleItems(updated);
+                                  }}
+                                  className="w-full px-2.5 py-1.5 bg-background border rounded-lg"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] text-muted-foreground mb-0.5">Keynote Speaker</label>
+                                <input
+                                  type="text"
+                                  placeholder="മുഖ്യ പ്രഭാഷണം"
+                                  value={item.keynoteSpeaker || ''}
+                                  onChange={(e) => {
+                                    const updated = [...scheduleItems];
+                                    updated[i].keynoteSpeaker = e.target.value;
+                                    setScheduleItems(updated);
+                                  }}
+                                  className="w-full px-2.5 py-1.5 bg-background border rounded-lg font-semibold"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
-                  ))}
+                  </div>
+
+                  {/* Formatted Text Editor */}
+                  <div className="border-t pt-5 space-y-2">
+                    <h3 className="text-xs font-black text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
+                      📜 4. Malayalam Notice Text Template
+                    </h3>
+                    <textarea
+                      rows={4}
+                      placeholder="Enter notice text template with {{VARIABLE_NAME}} placeholders..."
+                      value={noticeText}
+                      onChange={(e) => setNoticeText(e.target.value)}
+                      className="w-full p-3 bg-background border rounded-2xl text-xs font-sans focus:ring-2 focus:ring-emerald-500 outline-none"
+                    />
+                  </div>
+                </form>
+              </div>
+
+              {/* RIGHT COLUMN: Live Real-Time Flyer & Notice Preview */}
+              <div className="lg:col-span-6 xl:col-span-6 bg-slate-100 dark:bg-slate-950 p-6 overflow-y-auto max-h-[75vh] flex flex-col justify-start">
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <div className="flex items-center gap-2">
+                    <Eye size={16} className="text-emerald-600" />
+                    <span className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                      Live Flyer / Poster Preview
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                    Auto-updates in real time
+                  </span>
+                </div>
+
+                {/* Live Islamic Poster Card */}
+                <div className="bg-white dark:bg-slate-900 rounded-3xl border-2 border-emerald-500/30 shadow-xl overflow-hidden">
+                  {/* Poster Header */}
+                  <div className="bg-gradient-to-br from-emerald-800 via-emerald-700 to-teal-900 text-white text-center p-6 border-b-4 border-amber-400">
+                    <p className="text-amber-300 font-extrabold text-xs uppercase tracking-widest mb-1">
+                      بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ • ബിസ്മില്ലാഹിറഹ്മാനിറഹീം
+                    </p>
+                    <h2 className="text-xl md:text-2xl font-black text-white leading-tight">
+                      {templateName || 'Event Title / പരിപാടി ശീർഷകം'}
+                    </h2>
+                    <div className="inline-block mt-2 bg-emerald-950/60 border border-emerald-400/40 text-emerald-200 text-[11px] font-extrabold px-3 py-0.5 rounded-full">
+                      {isCustomCategoryMode ? customCategoryInput || 'Custom Category' : templateCategory}
+                    </div>
+                    {templateDesc ? (
+                      <p className="text-xs text-emerald-100/90 mt-2 font-medium max-w-md mx-auto">
+                        {templateDesc}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  {/* Poster Body with Live Sessions */}
+                  <div className="p-5 space-y-4">
+                    {/* Live Sessions */}
+                    {scheduleItems.length === 0 ? (
+                      <div className="p-6 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-dashed text-center text-slate-400 text-xs">
+                        Sessions added in the left panel will appear here live.
+                      </div>
+                    ) : (
+                      scheduleItems.map((s, idx) => (
+                        <div
+                          key={idx}
+                          className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-emerald-200 dark:border-emerald-900/60 shadow-sm space-y-2.5"
+                        >
+                          <div className="flex items-center justify-between border-b pb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-black flex items-center justify-center">
+                                {s.dayNumber || idx + 1}
+                              </span>
+                              <span className="font-extrabold text-emerald-900 dark:text-emerald-300 text-xs">
+                                {s.dateText || `Day ${idx + 1}`}
+                              </span>
+                            </div>
+                            {s.sessionTime && (
+                              <span className="bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-amber-300">
+                                ⏰ {s.sessionTime}
+                              </span>
+                            )}
+                          </div>
+
+                          <h4 className="text-sm font-black text-slate-900 dark:text-slate-100">
+                            {s.sessionTitle || 'സെഷൻ ശീർഷകം'}
+                          </h4>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                            {s.president && (
+                              <div className="bg-amber-50 dark:bg-slate-900/80 p-2 rounded-xl border border-amber-200 dark:border-slate-700">
+                                <span className="font-bold text-amber-800 dark:text-amber-400 text-[10px] block">അധ്യക്ഷൻ:</span>
+                                <span className="font-extrabold text-slate-800 dark:text-slate-200">{s.president}</span>
+                              </div>
+                            )}
+                            {s.inaugurator && (
+                              <div className="bg-emerald-50 dark:bg-slate-900/80 p-2 rounded-xl border border-emerald-200 dark:border-slate-700">
+                                <span className="font-bold text-emerald-800 dark:text-emerald-400 text-[10px] block">ഉദ്ഘാടനം:</span>
+                                <span className="font-extrabold text-slate-800 dark:text-slate-200">{s.inaugurator}</span>
+                              </div>
+                            )}
+                            {s.keynoteSpeaker && (
+                              <div className="md:col-span-2 bg-rose-50 dark:bg-slate-900/80 p-2 rounded-xl border border-rose-200 dark:border-slate-700">
+                                <span className="font-bold text-rose-800 dark:text-rose-400 text-[10px] block">മുഖ്യ പ്രഭാഷണം:</span>
+                                <span className="font-extrabold text-slate-900 dark:text-slate-100">{s.keynoteSpeaker}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+
+                    {/* Notice Text Live Preview */}
+                    {noticeText && (
+                      <div className="bg-emerald-50/60 dark:bg-slate-800/80 p-3.5 rounded-2xl border border-emerald-200 dark:border-slate-700 space-y-1.5">
+                        <span className="text-[10px] font-extrabold uppercase text-emerald-800 dark:text-emerald-400 block">
+                          Notice Flyer Text Preview:
+                        </span>
+                        <pre className="text-xs whitespace-pre-wrap font-sans text-slate-800 dark:text-slate-200 leading-relaxed">
+                          {noticeText}
+                        </pre>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Poster Footer */}
+                  <div className="bg-emerald-950 text-white text-center py-2.5 px-4 text-[10px] font-semibold text-emerald-200">
+                    ഔദ്യോഗിക ഈവന്റ് പോസ്റ്റർ • മഹല്ല് കമ്മ്യൂണിറ്റി പോർട്ടൽ
+                  </div>
                 </div>
               </div>
+            </div>
 
-              {/* Formatted Text Editor */}
-              <div className="border-t pt-4 space-y-2">
-                <label className="block text-xs font-bold">Malayalam Notice Text Template</label>
-                <textarea
-                  rows={4}
-                  placeholder="Enter notice text template with {{VARIABLE_NAME}} placeholders..."
-                  value={noticeText}
-                  onChange={(e) => setNoticeText(e.target.value)}
-                  className="w-full p-3 bg-background border rounded-2xl text-xs font-sans"
-                />
-              </div>
+            {/* Modal Bottom Footer Actions */}
+            <div className="flex items-center justify-between border-t px-6 py-4 bg-muted/20">
+              <span className="text-xs text-muted-foreground font-medium">
+                {scheduleItems.length} Program Sessions configured
+              </span>
 
-              <div className="flex items-center justify-end gap-3 border-t pt-4">
+              <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border text-xs font-bold"
+                  className="px-4 py-2 rounded-xl border text-xs font-bold hover:bg-muted"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
+                  form="templateForm"
                   disabled={saveMutation.isPending}
-                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl shadow-lg transition-all"
+                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-lg transition-all flex items-center gap-1.5 cursor-pointer"
                 >
-                  {saveMutation.isPending ? 'Saving...' : 'Save Template'}
+                  <Sparkles size={14} />
+                  {saveMutation.isPending ? 'Saving...' : editingTemplate ? 'Update Template' : 'Save Template'}
                 </button>
               </div>
-            </form>
+            </div>
           </motion.div>
         </div>
       )}

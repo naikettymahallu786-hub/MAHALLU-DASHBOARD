@@ -360,7 +360,7 @@ export default function MembersPage() {
                           </button>
                         </td>
                         <td>
-                          <div className="flex items-center gap-3">
+                          <Link href={`/members/${member._id}`} className="flex items-center gap-3 group/mem cursor-pointer">
                             <div className="w-8 h-8 rounded-full overflow-hidden bg-muted flex items-center justify-center text-xs font-bold shrink-0">
                               {member.photoUrl ? (
                                 <img src={member.photoUrl} alt={member.name} className="w-full h-full object-cover" />
@@ -368,11 +368,17 @@ export default function MembersPage() {
                                 <div>{member.name[0].toUpperCase()}</div>
                               )}
                             </div>
-                            <span className="font-medium text-foreground">{member.name}</span>
-                          </div>
+                            <span className="font-semibold text-foreground group-hover/mem:text-emerald-600 group-hover/mem:underline">
+                              {member.name}
+                            </span>
+                          </Link>
                         </td>
                         <td>
-                          <code className="text-xs bg-muted px-2 py-0.5 rounded-md font-bold">{member.memberId}</code>
+                          <Link href={`/members/${member._id}`}>
+                            <code className="text-xs bg-muted px-2 py-0.5 rounded-md font-bold text-emerald-600 hover:text-emerald-500 hover:underline cursor-pointer">
+                              {member.memberId}
+                            </code>
+                          </Link>
                         </td>
                         <td className="text-muted-foreground text-sm">{member.phone}</td>
                         <td>

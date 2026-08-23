@@ -2,12 +2,13 @@
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { useParams, useRouter } from 'next/navigation';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Save, ArrowLeft, Loader2, Plus, Trash2, Image as ImageIcon } from 'lucide-react';
+import { Save, ArrowLeft, Loader2, Plus, Trash2, Image as ImageIcon, Languages, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
 import { toast } from 'sonner';
 import { useState, useEffect } from 'react';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { translateToMalayalam } from '@/lib/translate';
 
 const toBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
   const reader = new FileReader();
@@ -25,13 +26,64 @@ export default function EditEventPage() {
     queryFn: () => apiClient.get(`/events/${id}`).then(r => r.data.data),
   });
 
-  const { register, control, handleSubmit, reset } = useForm({
+  const { register, control, handleSubmit, reset, setValue, watch } = useForm({
     defaultValues: {
       title: '', description: '', date: '', endDate: '', venue: '',
       capacity: '', fee: '', isPaid: false, isFeatured: false,
       committeeMembers: [{ memberId: '', role: '' }]
     }
   });
+
+  const [isTranslating, setIsTranslating] = useState(false);
+
+  const titleVal = watch('title');
+  const descVal = watch('description');
+  const venueVal = watch('venue');
+
+  const handleTranslateAll = async () => {
+    if (!titleVal?.trim() && !descVal?.trim() && !venueVal?.trim()) {
+      toast.error('Please enter title, description, or venue first');
+      return;
+    }
+
+    try {
+      setIsTranslating(true);
+      const [transTitle, transDesc, transVenue] = await Promise.all([
+        titleVal?.trim() ? translateToMalayalam(titleVal) : Promise.resolve(''),
+        descVal?.trim() ? translateToMalayalam(descVal) : Promise.resolve(''),
+        venueVal?.trim() ? translateToMalayalam(venueVal) : Promise.resolve(''),
+      ]);
+
+      if (transTitle) setValue('title', transTitle);
+      if (transDesc) setValue('description', transDesc);
+      if (transVenue) setValue('venue', transVenue);
+
+      toast.success('Converted event details to Malayalam! (മലയാളത്തിലേക്ക് മാറ്റി)');
+    } catch (e) {
+      toast.error('Translation failed. Please check network connection.');
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  const handleTranslateField = async (field: 'title' | 'description' | 'venue') => {
+    const val = field === 'title' ? titleVal : field === 'description' ? descVal : venueVal;
+    if (!val?.trim()) {
+      toast.error(`Please enter text in ${field} first`);
+      return;
+    }
+
+    try {
+      setIsTranslating(true);
+      const translated = await translateToMalayalam(val);
+      setValue(field, translated);
+      toast.success(`Converted ${field} to Malayalam!`);
+    } catch (e) {
+      toast.error('Translation failed');
+    } finally {
+      setIsTranslating(false);
+    }
+  };
 
   useEffect(() => {
     if (event) {
@@ -100,7 +152,7 @@ export default function EditEventPage() {
 
       updateMutation.mutate(payload);
     } catch (e) {
-      toast.error('Failed to process images');
+      toast.error('Failed to process image uploads');
     }
   };
 
@@ -110,12 +162,29 @@ export default function EditEventPage() {
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto pb-12">
-      <div className="flex items-center gap-3">
-        <Link href={`/events/${id}`}><button className="p-2 rounded-xl border"><ArrowLeft size={16} /></button></Link>
-        <div>
-          <h1 className="page-title text-xl">Edit Event</h1>
-          <p className="page-subtitle font-medium">Update program details</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Link href={`/events/${id}`}><button className="p-2 rounded-xl border hover:bg-muted transition-colors"><ArrowLeft size={16} /></button></Link>
+          <div>
+            <h1 className="page-title text-xl">Edit Event</h1>
+            <p className="page-subtitle font-medium">Update program details</p>
+          </div>
         </div>
+
+        {/* Global Translate Button */}
+        <button
+          type="button"
+          onClick={handleTranslateAll}
+          disabled={isTranslating}
+          className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition-all shadow-sm"
+        >
+          {isTranslating ? (
+            <Loader2 size={14} className="animate-spin text-emerald-600" />
+          ) : (
+            <Languages size={14} className="text-emerald-600 dark:text-emerald-400" />
+          )}
+          <span>Change to Malayalam (മലയാളത്തിലേക്ക്)</span>
+        </button>
       </div>
       
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -124,24 +193,54 @@ export default function EditEventPage() {
           <h2 className="font-bold text-lg border-b pb-2 mb-4">Event Details</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium mb-1.5">Event Title *</label>
-              <input type="text" {...register('title', { required: true })} className="w-full px-4 py-2.5 rounded-xl border bg-background text-sm" />
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-sm font-medium">Event Title *</label>
+                <button
+                  type="button"
+                  onClick={() => handleTranslateField('title')}
+                  disabled={isTranslating}
+                  className="text-[11px] text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1"
+                >
+                  <Sparkles size={11} /> Translate to Malayalam
+                </button>
+              </div>
+              <input type="text" {...register('title', { required: true })} className="w-full px-4 py-2.5 rounded-xl border bg-background text-sm font-medium" />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium mb-1.5">Description</label>
-              <textarea {...register('description')} rows={3} className="w-full px-4 py-2.5 rounded-xl border bg-background text-sm" />
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-sm font-medium">Description</label>
+                <button
+                  type="button"
+                  onClick={() => handleTranslateField('description')}
+                  disabled={isTranslating}
+                  className="text-[11px] text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1"
+                >
+                  <Sparkles size={11} /> Translate to Malayalam
+                </button>
+              </div>
+              <textarea {...register('description')} rows={3} className="w-full px-4 py-2.5 rounded-xl border bg-background text-sm font-medium leading-relaxed" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1.5">Start Date *</label>
-              <input type="datetime-local" {...register('date', { required: true })} className="w-full px-4 py-2.5 rounded-xl border bg-background text-sm" />
+              <input type="datetime-local" {...register('date', { required: true })} className="w-full px-4 py-2.5 rounded-xl border bg-background text-sm font-medium" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1.5">End Date (Optional)</label>
-              <input type="datetime-local" {...register('endDate')} className="w-full px-4 py-2.5 rounded-xl border bg-background text-sm" />
+              <input type="datetime-local" {...register('endDate')} className="w-full px-4 py-2.5 rounded-xl border bg-background text-sm font-medium" />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1.5">Venue *</label>
-              <input type="text" {...register('venue', { required: true })} className="w-full px-4 py-2.5 rounded-xl border bg-background text-sm" />
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-sm font-medium">Venue *</label>
+                <button
+                  type="button"
+                  onClick={() => handleTranslateField('venue')}
+                  disabled={isTranslating}
+                  className="text-[11px] text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1"
+                >
+                  <Sparkles size={11} /> Translate
+                </button>
+              </div>
+              <input type="text" {...register('venue', { required: true })} className="w-full px-4 py-2.5 rounded-xl border bg-background text-sm font-medium" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1.5">Total capacity</label>

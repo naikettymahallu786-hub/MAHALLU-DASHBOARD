@@ -26,7 +26,13 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 
 const CURRENT_YEAR = new Date().getFullYear();
-const YEAR_OPTIONS = [CURRENT_YEAR - 1, CURRENT_YEAR, CURRENT_YEAR + 1];
+const YEAR_OPTIONS = [
+  { value: 'all', label: 'All Years / All Time' },
+  { value: String(CURRENT_YEAR), label: `Year ${CURRENT_YEAR}` },
+  { value: String(CURRENT_YEAR - 1), label: `Year ${CURRENT_YEAR - 1}` },
+  { value: String(CURRENT_YEAR - 2), label: `Year ${CURRENT_YEAR - 2}` },
+  { value: String(CURRENT_YEAR + 1), label: `Year ${CURRENT_YEAR + 1}` },
+];
 
 const MONTH_NAMES = [
   { value: 'all', label: 'All Months' },
@@ -49,10 +55,8 @@ const CATEGORIES = [
   { id: 'certificates', label: 'Certificates', icon: Award, color: '#0284c7', endpoint: '/reports/export/certificates' },
   { id: 'events', label: 'Events & Programs', icon: Calendar, color: '#7c3aed', endpoint: '/reports/export/events' },
   { id: 'death', label: 'Death & Burial', icon: Skull, color: '#64748b', endpoint: '/reports/export/death' },
-  { id: 'zakat', label: 'Sadaqah Distribution', icon: Zap, color: '#d97706', endpoint: '/reports/export/zakat' },
   { id: 'members', label: 'Member Census', icon: Users, color: '#3b82f6', endpoint: '/reports/export/members' },
   { id: 'academic', label: 'Madrasa Academic', icon: GraduationCap, color: '#8b5cf6', endpoint: '/reports/export/academic' },
-  { id: 'payments', label: 'Payments Ledger', icon: FileText, color: '#ec4899', endpoint: '/reports/export/payments' },
 ];
 
 export default function ReportsPage() {
@@ -60,7 +64,7 @@ export default function ReportsPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
   const [selectedMonth, setSelectedMonth] = useState('all');
-  const [selectedYear, setSelectedYear] = useState(String(CURRENT_YEAR));
+  const [selectedYear, setSelectedYear] = useState('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [isDownloading, setIsDownloading] = useState(false);
@@ -76,7 +80,7 @@ export default function ReportsPage() {
   if (startDate) queryParams.startDate = startDate;
   if (endDate) queryParams.endDate = endDate;
   if (!startDate && !endDate) {
-    if (selectedYear) queryParams.year = selectedYear;
+    if (selectedYear && selectedYear !== 'all') queryParams.year = selectedYear;
     if (selectedMonth && selectedMonth !== 'all') queryParams.month = selectedMonth;
   }
 
@@ -92,7 +96,7 @@ export default function ReportsPage() {
     setSearch('');
     setStatus('all');
     setSelectedMonth('all');
-    setSelectedYear(String(CURRENT_YEAR));
+    setSelectedYear('all');
     setStartDate('');
     setEndDate('');
   };
@@ -248,8 +252,8 @@ export default function ReportsPage() {
               className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
               {YEAR_OPTIONS.map((yr) => (
-                <option key={yr} value={yr}>
-                  Year {yr}
+                <option key={yr.value} value={yr.value}>
+                  {yr.label}
                 </option>
               ))}
             </select>
@@ -432,37 +436,68 @@ export default function ReportsPage() {
               </table>
             )}
 
-            {activeTab === 'zakat' && (
+            {activeTab === 'members' && (
               <table className="w-full text-left text-sm">
                 <thead className="bg-muted/50 border-b text-xs uppercase tracking-wider text-muted-foreground font-bold">
                   <tr>
-                    <th className="px-6 py-4">Year</th>
-                    <th className="px-6 py-4">Applicant Name</th>
-                    <th className="px-6 py-4">Requested</th>
-                    <th className="px-6 py-4">Approved</th>
+                    <th className="px-6 py-4">Member Name</th>
+                    <th className="px-6 py-4">Member ID</th>
+                    <th className="px-6 py-4">Family / Ward</th>
+                    <th className="px-6 py-4">Phone</th>
+                    <th className="px-6 py-4">Gender</th>
                     <th className="px-6 py-4">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {records.map((z: any, idx: number) => (
-                    <tr key={idx} className="hover:bg-muted/30">
-                      <td className="px-6 py-4 font-bold">{z.year}</td>
-                      <td className="px-6 py-4"><div className="font-bold">{z.memberName}</div><div className="text-xs text-muted-foreground">{z.phone}</div></td>
-                      <td className="px-6 py-4 font-bold">{formatCurrency(z.amountRequested)}</td>
-                      <td className="px-6 py-4 font-extrabold text-emerald-600">{formatCurrency(z.amountApproved)}</td>
-                      <td className="px-6 py-4"><span className="capitalize px-2.5 py-1 rounded-full text-xs font-bold bg-muted">{z.status}</span></td>
+                  {records.map((m: any) => (
+                    <tr key={m._id} className="hover:bg-muted/30">
+                      <td className="px-6 py-4 font-bold text-foreground">{m.name}</td>
+                      <td className="px-6 py-4 font-mono font-bold text-emerald-600">{m.memberId || 'N/A'}</td>
+                      <td className="px-6 py-4 text-xs font-semibold">
+                        {m.familyId?.familyCode ? `${m.familyId.familyCode} (Ward ${m.familyId.wardNo || 'N/A'})` : 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 text-xs text-muted-foreground">{m.phone || 'N/A'}</td>
+                      <td className="px-6 py-4 capitalize text-xs">{m.gender || 'N/A'}</td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${m.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-muted-foreground'}`}>
+                          {m.status || 'Active'}
+                        </span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             )}
 
-            {(activeTab === 'members' || activeTab === 'academic' || activeTab === 'payments') && (
-              <div className="p-8 text-center">
-                <FileText className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm font-bold">Data ready for filtered download</p>
-                <p className="text-xs text-muted-foreground mt-1">Click "Export Filtered CSV" above to download the spreadsheet.</p>
-              </div>
+            {activeTab === 'academic' && (
+              <table className="w-full text-left text-sm">
+                <thead className="bg-muted/50 border-b text-xs uppercase tracking-wider text-muted-foreground font-bold">
+                  <tr>
+                    <th className="px-6 py-4">Student Name</th>
+                    <th className="px-6 py-4">Admission #</th>
+                    <th className="px-6 py-4">Class</th>
+                    <th className="px-6 py-4">Guardian</th>
+                    <th className="px-6 py-4">Guardian Phone</th>
+                    <th className="px-6 py-4">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {records.map((s: any) => (
+                    <tr key={s._id} className="hover:bg-muted/30">
+                      <td className="px-6 py-4 font-bold text-foreground">{s.memberId?.name || s.name}</td>
+                      <td className="px-6 py-4 font-mono font-bold text-emerald-600">{s.admissionNo || 'N/A'}</td>
+                      <td className="px-6 py-4 text-xs font-semibold">{s.classId?.name || s.standard || 'N/A'}</td>
+                      <td className="px-6 py-4 text-xs font-semibold">{s.guardianId?.name || 'N/A'}</td>
+                      <td className="px-6 py-4 text-xs text-muted-foreground">{s.guardianId?.phone || 'N/A'}</td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${s.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-muted-foreground'}`}>
+                          {s.status || 'Enrolled'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </div>
         )}

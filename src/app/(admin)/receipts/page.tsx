@@ -51,12 +51,26 @@ export default function ReceiptsPage() {
     onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed to create receipt')
   });
 
+  const getDonorOrPayerName = (receipt: any) => {
+    const payment = receipt?.paymentId;
+    if (payment?.metadata?.donorName) return payment.metadata.donorName;
+    if (receipt?.metadata?.donorName) return receipt.metadata.donorName;
+    const match = payment?.description?.match(/\(Donor:\s*([^,)]+)/);
+    if (match) return match[1].trim();
+    if (payment?.metadata?.name) return payment.metadata.name;
+    if (payment?.paidForId?.name && !payment?.metadata?.isExternalDonor) return payment.paidForId.name;
+    if (payment?.paidById?.name && !payment?.metadata?.isExternalDonor) return payment.paidById.name;
+    const m = members.find((mem: any) => mem._id === (payment?.paidForId?._id || payment?.paidForId || payment?.paidById?._id || payment?.paidById));
+    if (m && !payment?.metadata?.isExternalDonor) return m.name;
+    return payment?.paidForId?.name || payment?.paidById?.name || 'Mahallu Contributor';
+  };
+
   const handlePrint = (receipt: any) => {
     const payment = receipt.paymentId;
-    const memberName = payment?.paidForId?.name || 
-                       payment?.paidById?.name || 
-                       members.find((m: any) => m._id === (payment?.paidForId || payment?.paidById))?.name || 
-                       'Member';
+    const memberName = getDonorOrPayerName(receipt);
+    const category = payment?.metadata?.category || 
+                     payment?.description?.match(/^\[(.*?)\]/)?.[1] || 
+                     (payment?.type ? payment.type.replace(/_/g, ' ') : 'General');
     const amount = formatCurrency(payment?.amount || 0);
     const date = formatDate(receipt.createdAt);
     
@@ -84,12 +98,12 @@ export default function ReceiptsPage() {
         <body>
           <div class="header">
             <h1 class="title">MAHALLU ERP SYSTEM</h1>
-            <p class="subtitle">Official Payment Receipt</p>
+            <p class="subtitle">Official Payment Receipt • ഔദ്യോഗിക രസീത്</p>
           </div>
-          <div class="row"><div class="label">Receipt No:</div><div class="value">${receipt.receiptNo}</div></div>
+          <div class="row"><div class="label">Receipt No:</div><div class="value" style="font-weight: bold; color: #059669;">${receipt.receiptNo}</div></div>
           <div class="row"><div class="label">Date:</div><div class="value">${date}</div></div>
           <div class="row"><div class="label">Received From:</div><div class="value">${memberName}</div></div>
-          <div class="row"><div class="label">Payment Type:</div><div class="value" style="text-transform: capitalize;">${payment?.type?.replace('_', ' ') || 'General'}</div></div>
+          <div class="row"><div class="label">Category / ഇനം:</div><div class="value" style="font-weight: bold; color: #059669; text-transform: capitalize;">${category}</div></div>
           <div class="row"><div class="label">Payment Method:</div><div class="value" style="text-transform: capitalize;">${payment?.gateway || 'Cash'}</div></div>
           ${payment?.description ? `<div class="row"><div class="label">Description:</div><div class="value">${payment.description}</div></div>` : ''}
           
@@ -350,10 +364,7 @@ export default function ReceiptsPage() {
                   <div className="flex justify-between text-sm">
                     <span className="font-semibold text-muted-foreground">Received From:</span>
                     <span className="font-bold text-foreground">
-                      {selectedReceiptForView.paymentId?.paidForId?.name || 
-                       selectedReceiptForView.paymentId?.paidById?.name || 
-                       members.find((m: any) => m._id === (selectedReceiptForView.paymentId?.paidForId || selectedReceiptForView.paymentId?.paidById))?.name || 
-                       'Member'}
+                      {getDonorOrPayerName(selectedReceiptForView)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">

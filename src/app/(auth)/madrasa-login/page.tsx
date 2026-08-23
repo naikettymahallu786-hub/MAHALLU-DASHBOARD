@@ -16,7 +16,6 @@ import Link from 'next/link';
 const loginSchema = z.object({
   identifier: z.string().min(1, 'Email or phone is required'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
-  tenantCode: z.string().min(1, 'Mahallu code is required'),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -29,7 +28,6 @@ export default function MadrasaLoginPage() {
 
   const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { tenantCode: 'JMM001' },
   });
 
   const onSubmit = async (data: LoginForm) => {
@@ -48,7 +46,6 @@ export default function MadrasaLoginPage() {
   const fillDemoRole = (email: string, pass: string) => {
     setValue('identifier', email);
     setValue('password', pass);
-    setValue('tenantCode', 'JMM001');
   };
 
   return (
@@ -104,22 +101,6 @@ export default function MadrasaLoginPage() {
         <div className="glass-card rounded-3xl p-8 border border-white/10"
           style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(24px)' }}>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            {/* Mahallu Code */}
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">
-                Mahallu Code
-              </label>
-              <input
-                id="tenantCode"
-                {...register('tenantCode')}
-                placeholder="e.g. JMM001"
-                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all uppercase"
-              />
-              {errors.tenantCode && (
-                <p className="text-red-400 text-xs mt-1">{errors.tenantCode.message}</p>
-              )}
-            </div>
-
             {/* Email / Phone */}
             <div>
               <label className="block text-sm font-medium text-white/80 mb-2">
