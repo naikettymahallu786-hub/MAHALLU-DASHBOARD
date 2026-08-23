@@ -58,7 +58,6 @@ const CATEGORIES = [
   { id: 'zakat', label: 'Sadaqah Distribution', icon: Zap, color: '#d97706', endpoint: '/reports/export/zakat' },
   { id: 'members', label: 'Member Census', icon: Users, color: '#3b82f6', endpoint: '/reports/export/members' },
   { id: 'academic', label: 'Madrasa Academic', icon: GraduationCap, color: '#8b5cf6', endpoint: '/reports/export/academic' },
-  { id: 'payments', label: 'Payments Ledger', icon: FileText, color: '#ec4899', endpoint: '/reports/export/payments' },
 ];
 
 export default function ReportsPage() {
@@ -523,45 +522,6 @@ export default function ReportsPage() {
                       </td>
                     </tr>
                   ))}
-                </tbody>
-              </table>
-            )}
-
-            {activeTab === 'payments' && (
-              <table className="w-full text-left text-sm">
-                <thead className="bg-muted/50 border-b text-xs uppercase tracking-wider text-muted-foreground font-bold">
-                  <tr>
-                    <th className="px-6 py-4">Payment #</th>
-                    <th className="px-6 py-4">Date</th>
-                    <th className="px-6 py-4">Payer / Contributor</th>
-                    <th className="px-6 py-4">Category</th>
-                    <th className="px-6 py-4">Amount</th>
-                    <th className="px-6 py-4">Gateway</th>
-                    <th className="px-6 py-4">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {records.map((p: any) => {
-                    const payerName = p.metadata?.donorName || p.paidForId?.name || p.paidById?.name || 'Mahallu Contributor';
-                    return (
-                      <tr key={p._id} className="hover:bg-muted/30">
-                        <td className="px-6 py-4 font-mono font-bold text-emerald-600">{p.paymentNo || 'N/A'}</td>
-                        <td className="px-6 py-4 font-semibold">{formatDate(p.createdAt)}</td>
-                        <td className="px-6 py-4">
-                          <div className="font-bold text-foreground">{payerName}</div>
-                          <div className="text-xs text-muted-foreground">{p.metadata?.donorPhone || p.paidById?.phone || ''}</div>
-                        </td>
-                        <td className="px-6 py-4 capitalize text-xs font-semibold">{p.type?.replace(/_/g, ' ') || 'General'}</td>
-                        <td className="px-6 py-4 font-extrabold text-foreground">{formatCurrency(p.amount || 0)}</td>
-                        <td className="px-6 py-4 capitalize text-xs font-bold text-muted-foreground">{p.gateway || 'Cash'}</td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${p.status === 'success' || p.status === 'completed' || p.status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                            {p.status || 'Completed'}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
                 </tbody>
               </table>
             )}
