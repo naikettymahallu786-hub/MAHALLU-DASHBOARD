@@ -26,7 +26,13 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 
 const CURRENT_YEAR = new Date().getFullYear();
-const YEAR_OPTIONS = [CURRENT_YEAR - 1, CURRENT_YEAR, CURRENT_YEAR + 1];
+const YEAR_OPTIONS = [
+  { value: 'all', label: 'All Years / All Time' },
+  { value: String(CURRENT_YEAR), label: `Year ${CURRENT_YEAR}` },
+  { value: String(CURRENT_YEAR - 1), label: `Year ${CURRENT_YEAR - 1}` },
+  { value: String(CURRENT_YEAR - 2), label: `Year ${CURRENT_YEAR - 2}` },
+  { value: String(CURRENT_YEAR + 1), label: `Year ${CURRENT_YEAR + 1}` },
+];
 
 const MONTH_NAMES = [
   { value: 'all', label: 'All Months' },
@@ -60,7 +66,7 @@ export default function ReportsPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
   const [selectedMonth, setSelectedMonth] = useState('all');
-  const [selectedYear, setSelectedYear] = useState(String(CURRENT_YEAR));
+  const [selectedYear, setSelectedYear] = useState('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [isDownloading, setIsDownloading] = useState(false);
@@ -76,7 +82,7 @@ export default function ReportsPage() {
   if (startDate) queryParams.startDate = startDate;
   if (endDate) queryParams.endDate = endDate;
   if (!startDate && !endDate) {
-    if (selectedYear) queryParams.year = selectedYear;
+    if (selectedYear && selectedYear !== 'all') queryParams.year = selectedYear;
     if (selectedMonth && selectedMonth !== 'all') queryParams.month = selectedMonth;
   }
 
@@ -92,7 +98,7 @@ export default function ReportsPage() {
     setSearch('');
     setStatus('all');
     setSelectedMonth('all');
-    setSelectedYear(String(CURRENT_YEAR));
+    setSelectedYear('all');
     setStartDate('');
     setEndDate('');
   };
@@ -248,8 +254,8 @@ export default function ReportsPage() {
               className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
               {YEAR_OPTIONS.map((yr) => (
-                <option key={yr} value={yr}>
-                  Year {yr}
+                <option key={yr.value} value={yr.value}>
+                  {yr.label}
                 </option>
               ))}
             </select>
@@ -457,12 +463,107 @@ export default function ReportsPage() {
               </table>
             )}
 
-            {(activeTab === 'members' || activeTab === 'academic' || activeTab === 'payments') && (
-              <div className="p-8 text-center">
-                <FileText className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm font-bold">Data ready for filtered download</p>
-                <p className="text-xs text-muted-foreground mt-1">Click "Export Filtered CSV" above to download the spreadsheet.</p>
-              </div>
+            {activeTab === 'members' && (
+              <table className="w-full text-left text-sm">
+                <thead className="bg-muted/50 border-b text-xs uppercase tracking-wider text-muted-foreground font-bold">
+                  <tr>
+                    <th className="px-6 py-4">Member Name</th>
+                    <th className="px-6 py-4">Member ID</th>
+                    <th className="px-6 py-4">Family / Ward</th>
+                    <th className="px-6 py-4">Phone</th>
+                    <th className="px-6 py-4">Gender</th>
+                    <th className="px-6 py-4">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {records.map((m: any) => (
+                    <tr key={m._id} className="hover:bg-muted/30">
+                      <td className="px-6 py-4 font-bold text-foreground">{m.name}</td>
+                      <td className="px-6 py-4 font-mono font-bold text-emerald-600">{m.memberId || 'N/A'}</td>
+                      <td className="px-6 py-4 text-xs font-semibold">
+                        {m.familyId?.familyCode ? `${m.familyId.familyCode} (Ward ${m.familyId.wardNo || 'N/A'})` : 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 text-xs text-muted-foreground">{m.phone || 'N/A'}</td>
+                      <td className="px-6 py-4 capitalize text-xs">{m.gender || 'N/A'}</td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${m.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-muted-foreground'}`}>
+                          {m.status || 'Active'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            {activeTab === 'academic' && (
+              <table className="w-full text-left text-sm">
+                <thead className="bg-muted/50 border-b text-xs uppercase tracking-wider text-muted-foreground font-bold">
+                  <tr>
+                    <th className="px-6 py-4">Student Name</th>
+                    <th className="px-6 py-4">Admission #</th>
+                    <th className="px-6 py-4">Class</th>
+                    <th className="px-6 py-4">Guardian</th>
+                    <th className="px-6 py-4">Guardian Phone</th>
+                    <th className="px-6 py-4">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {records.map((s: any) => (
+                    <tr key={s._id} className="hover:bg-muted/30">
+                      <td className="px-6 py-4 font-bold text-foreground">{s.memberId?.name || s.name}</td>
+                      <td className="px-6 py-4 font-mono font-bold text-emerald-600">{s.admissionNo || 'N/A'}</td>
+                      <td className="px-6 py-4 text-xs font-semibold">{s.classId?.name || s.standard || 'N/A'}</td>
+                      <td className="px-6 py-4 text-xs font-semibold">{s.guardianId?.name || 'N/A'}</td>
+                      <td className="px-6 py-4 text-xs text-muted-foreground">{s.guardianId?.phone || 'N/A'}</td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${s.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-muted-foreground'}`}>
+                          {s.status || 'Enrolled'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            {activeTab === 'payments' && (
+              <table className="w-full text-left text-sm">
+                <thead className="bg-muted/50 border-b text-xs uppercase tracking-wider text-muted-foreground font-bold">
+                  <tr>
+                    <th className="px-6 py-4">Payment #</th>
+                    <th className="px-6 py-4">Date</th>
+                    <th className="px-6 py-4">Payer / Contributor</th>
+                    <th className="px-6 py-4">Category</th>
+                    <th className="px-6 py-4">Amount</th>
+                    <th className="px-6 py-4">Gateway</th>
+                    <th className="px-6 py-4">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {records.map((p: any) => {
+                    const payerName = p.metadata?.donorName || p.paidForId?.name || p.paidById?.name || 'Mahallu Contributor';
+                    return (
+                      <tr key={p._id} className="hover:bg-muted/30">
+                        <td className="px-6 py-4 font-mono font-bold text-emerald-600">{p.paymentNo || 'N/A'}</td>
+                        <td className="px-6 py-4 font-semibold">{formatDate(p.createdAt)}</td>
+                        <td className="px-6 py-4">
+                          <div className="font-bold text-foreground">{payerName}</div>
+                          <div className="text-xs text-muted-foreground">{p.metadata?.donorPhone || p.paidById?.phone || ''}</div>
+                        </td>
+                        <td className="px-6 py-4 capitalize text-xs font-semibold">{p.type?.replace(/_/g, ' ') || 'General'}</td>
+                        <td className="px-6 py-4 font-extrabold text-foreground">{formatCurrency(p.amount || 0)}</td>
+                        <td className="px-6 py-4 capitalize text-xs font-bold text-muted-foreground">{p.gateway || 'Cash'}</td>
+                        <td className="px-6 py-4">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${p.status === 'success' || p.status === 'completed' || p.status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                            {p.status || 'Completed'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             )}
           </div>
         )}
