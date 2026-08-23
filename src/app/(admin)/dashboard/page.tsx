@@ -208,7 +208,7 @@ export default function DashboardPage() {
     { title: t('finance.expense'), value: `₹${((kpis?.monthlyExpenses || 0) / 1000).toFixed(1)}K`, icon: TrendingDown, color: '#f43f5e', trend: 'down' as const, change: 'Expenses' },
     { title: t('dashboard.pendingDues'), value: `₹${((kpis?.pendingFees || 0) / 1000).toFixed(1)}K`, icon: Clock, color: '#f59e0b', change: 'Outstanding dues', href: '/receipts' },
     { title: t('sidebar.donations'), value: `₹${((kpis?.monthlyDonations || 0) / 1000).toFixed(1)}K`, icon: Heart, color: '#ec4899', trend: 'up' as const, change: 'This month', href: '/donations' },
-    { title: t('sidebar.zakat'), value: `₹${((kpis?.zakatCollected || 0) / 1000).toFixed(1)}K`, icon: Zap, color: '#14b8a6', change: 'This year', href: '/zakat' },
+    { title: t('sidebar.zakat'), value: `₹${((kpis?.zakatCollected || 0) / 1000).toFixed(1)}K`, icon: Zap, color: '#14b8a6', change: 'This year', href: '/sadaqah' },
   ];
 
   const quickActions = [
@@ -218,6 +218,7 @@ export default function DashboardPage() {
     { label: t('dashboard.registerNikah'), icon: Heart, href: '/nikah/new', color: '#ec4899' },
     { label: t('dashboard.burialEntry'), icon: Users, href: '/death/new', color: '#64748b' },
     { label: 'Create Event', icon: Zap, href: '/events/new', color: '#10b981' },
+    { label: 'Sadaqah Ledger', icon: Heart, href: '/sadaqah', color: '#14b8a6' },
     { label: t('dashboard.collectDonation'), icon: DollarSign, href: '/donations/new', color: '#f59e0b' },
   ];
 
