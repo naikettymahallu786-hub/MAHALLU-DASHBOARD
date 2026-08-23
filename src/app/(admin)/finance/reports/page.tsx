@@ -247,6 +247,23 @@ export default function FullFinanceReportsPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {/* Search Box */}
           <div className="relative">
+            <Search className="absolute left-3.5 top-3 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder={t('sadaqah_page.searchPlaceholder')}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+
+          {/* Category Filter */}
+          <div>
+            <select
+              value={category}
+              onChange={(e) => {
+                setCategory(e.target.value);
+                setPage(1);
               }}
               className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
