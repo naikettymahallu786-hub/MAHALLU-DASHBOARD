@@ -132,24 +132,28 @@ export default function DashboardPage() {
   const { data: kpis, isLoading: kpisLoading } = useQuery({
     queryKey: ['dashboard-kpis'],
     queryFn: () => apiClient.get('/dashboard/kpis').then(r => r.data.data),
+    staleTime: 5 * 60 * 1000,
   });
 
   // Income Expense Chart
   const { data: incomeExpenseRaw, isLoading: incomeLoading } = useQuery({
     queryKey: ['dashboard-income-expense'],
     queryFn: () => apiClient.get('/dashboard/charts/income-expense').then(r => r.data.data),
+    staleTime: 5 * 60 * 1000,
   });
 
   // Attendance Chart
   const { data: attendanceRaw, isLoading: attendanceLoading } = useQuery({
     queryKey: ['dashboard-attendance'],
     queryFn: () => apiClient.get('/dashboard/charts/attendance').then(r => r.data.data),
+    staleTime: 5 * 60 * 1000,
   });
 
   // Member Growth Chart
   const { data: memberGrowthRaw, isLoading: memberLoading } = useQuery({
     queryKey: ['dashboard-member-growth'],
     queryFn: () => apiClient.get('/dashboard/charts/member-growth').then(r => r.data.data),
+    staleTime: 5 * 60 * 1000,
   });
 
   // Process data for Recharts
@@ -213,7 +217,7 @@ export default function DashboardPage() {
     { label: t('dashboard.generateReceipt'), icon: FileText, href: '/receipts/new', color: '#3b82f6' },
     { label: t('dashboard.registerNikah'), icon: Heart, href: '/nikah/new', color: '#ec4899' },
     { label: t('dashboard.burialEntry'), icon: Users, href: '/death/new', color: '#64748b' },
-    { label: t('dashboard.sendWhatsapp'), icon: MessageCircle, href: '/whatsapp', color: '#25d366' },
+    { label: 'Create Event', icon: Zap, href: '/events/new', color: '#10b981' },
     { label: t('dashboard.collectDonation'), icon: DollarSign, href: '/donations/new', color: '#f59e0b' },
   ];
 

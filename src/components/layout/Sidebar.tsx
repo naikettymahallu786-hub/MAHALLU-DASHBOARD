@@ -61,6 +61,7 @@ const NAV_ITEMS: NavItem[] = [
 
 export function Sidebar() {
   const queryClient = useQueryClient();
+  const prefetchedSet = useState(() => new Set<string>())[0];
   const [collapsed, setCollapsed] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>(['family_members', 'Family & Members', 'finance', 'Finance']);
   const pathname = usePathname();
@@ -68,52 +69,65 @@ export function Sidebar() {
   const { t } = useTranslation();
 
   const handlePrefetch = (id: string) => {
+    if (prefetchedSet.has(id)) return;
+    prefetchedSet.add(id);
+
     if (id === 'dashboard') {
       queryClient.prefetchQuery({
         queryKey: ['dashboard-kpis'],
         queryFn: () => apiClient.get('/dashboard/kpis').then(r => r.data.data),
+        staleTime: 5 * 60 * 1000,
       });
       queryClient.prefetchQuery({
         queryKey: ['dashboard-income-expense'],
         queryFn: () => apiClient.get('/dashboard/charts/income-expense').then(r => r.data.data),
+        staleTime: 5 * 60 * 1000,
       });
     } else if (id === 'teachers') {
       queryClient.prefetchQuery({
         queryKey: ['teachers'],
         queryFn: () => apiClient.get('/teachers').then(r => r.data),
+        staleTime: 5 * 60 * 1000,
       });
     } else if (id === 'attendance') {
       queryClient.prefetchQuery({
         queryKey: ['madrasa'],
         queryFn: () => apiClient.get('/madrasa').then(r => r.data.data),
+        staleTime: 5 * 60 * 1000,
       });
     } else if (id === 'finance') {
       queryClient.prefetchQuery({
         queryKey: ['finance-kpis'],
         queryFn: () => apiClient.get('/dashboard/kpis').then(r => r.data.data),
+        staleTime: 5 * 60 * 1000,
       });
       queryClient.prefetchQuery({
         queryKey: ['transactions', new Date().getFullYear().toString()],
         queryFn: () => apiClient.get(`/finance/transactions?year=${new Date().getFullYear()}`).then(r => r.data.data),
+        staleTime: 5 * 60 * 1000,
       });
     } else if (id === 'receipts') {
       queryClient.prefetchQuery({
         queryKey: ['receipts'],
         queryFn: () => apiClient.get('/receipts').then(r => r.data),
+        staleTime: 5 * 60 * 1000,
       });
       queryClient.prefetchQuery({
         queryKey: ['members-list'],
         queryFn: () => apiClient.get('/members').then(r => r.data),
+        staleTime: 5 * 60 * 1000,
       });
     } else if (id === 'donations') {
       queryClient.prefetchQuery({
         queryKey: ['donations', 1, ''],
         queryFn: () => apiClient.get('/donations', { params: { page: 1, limit: 20, campaign: '' } }).then(r => r.data),
+        staleTime: 5 * 60 * 1000,
       });
     } else if (id === 'recurring_donations') {
       queryClient.prefetchQuery({
         queryKey: ['families', ''],
         queryFn: () => apiClient.get('/families', { params: { search: '' } }).then(r => r.data.data || []),
+        staleTime: 5 * 60 * 1000,
       });
     }
   };
@@ -121,7 +135,9 @@ export function Sidebar() {
   const { data: pendingRegistrations } = useQuery({
     queryKey: ['pending-registrations-count'],
     queryFn: () => apiClient.get('/registrations/pending').then(r => r.data.data),
-    refetchInterval: 30000, // Refresh every 30 seconds
+    staleTime: 30000,
+    refetchInterval: 30000,
+    refetchOnWindowFocus: false,
   });
 
   const pendingCount = pendingRegistrations?.length || 0;
