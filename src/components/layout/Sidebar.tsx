@@ -11,7 +11,7 @@ import { useUIStore } from '@/store/ui.store';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 import {
-  LayoutDashboard, Users, Home, GraduationCap, UserCheck, DollarSign,
+  LayoutDashboard, Users, Home, GraduationCap, UserCheck, DollarSign, Wallet,
   FileText, Building2, Zap, Heart, Skull, MapPin, Calendar, Bell, MessageCircle,
   BarChart3, Settings, ChevronLeft, ChevronRight, LogOut, Star, ChevronDown, UserPlus, BookOpen, Inbox
 } from 'lucide-react';
@@ -41,93 +41,80 @@ const NAV_ITEMS: NavItem[] = [
   {
     id: 'finance', label: 'Finance', icon: DollarSign,
     children: [
-      { id: 'overview', label: 'Income & Expense', href: '/finance', icon: DollarSign },
+      { id: 'accounts', label: 'Accounts & Funds', href: '/finance', icon: Wallet },
       { id: 'receipts', label: 'Receipts', href: '/receipts', icon: FileText },
       { id: 'donations', label: 'Donations', href: '/donations', icon: Heart },
       { id: 'recurring_donations', label: 'Recurring Donations', href: '/recurring-donations', icon: Calendar },
       { id: 'finance_reports', label: 'Full Finance Reports', href: '/finance/reports', icon: BarChart3 },
     ],
   },
-  { id: 'properties', label: 'Properties & Rental', href: '/properties', icon: Building2 },
+  { id: 'properties', label: 'Properties', href: '/properties', icon: Building2 },
   { id: 'certificates', label: 'Certificates', href: '/certificates', icon: FileText },
   { id: 'zakat', label: 'Sadaqah', href: '/sadaqah', icon: Zap },
   { id: 'nikah', label: 'Nikah', href: '/nikah', icon: Heart },
   { id: 'death', label: 'Death & Burial', href: '/death', icon: Skull },
   { id: 'events', label: 'Events', href: '/events', icon: Calendar },
   { id: 'notices', label: 'Notices', href: '/notices', icon: Bell },
+  { id: 'whatsapp', label: 'WhatsApp', href: '/whatsapp', icon: MessageCircle },
   { id: 'reports', label: 'Reports Hub', href: '/reports', icon: BarChart3 },
   { id: 'settings', label: 'Settings', href: '/settings', icon: Settings },
 ];
 
 export function Sidebar() {
   const queryClient = useQueryClient();
-  const prefetchedSet = useState(() => new Set<string>())[0];
   const [collapsed, setCollapsed] = useState(false);
-  const [expandedItems, setExpandedItems] = useState<string[]>(['family_members', 'Family & Members', 'finance', 'Finance']);
+  const [expandedItems, setExpandedItems] = useState<string[]>(['Madrasa', 'Finance']);
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
   const { t } = useTranslation();
 
   const handlePrefetch = (id: string) => {
-    if (prefetchedSet.has(id)) return;
-    prefetchedSet.add(id);
-
     if (id === 'dashboard') {
       queryClient.prefetchQuery({
         queryKey: ['dashboard-kpis'],
         queryFn: () => apiClient.get('/dashboard/kpis').then(r => r.data.data),
-        staleTime: 5 * 60 * 1000,
       });
       queryClient.prefetchQuery({
         queryKey: ['dashboard-income-expense'],
         queryFn: () => apiClient.get('/dashboard/charts/income-expense').then(r => r.data.data),
-        staleTime: 5 * 60 * 1000,
       });
     } else if (id === 'teachers') {
       queryClient.prefetchQuery({
         queryKey: ['teachers'],
         queryFn: () => apiClient.get('/teachers').then(r => r.data),
-        staleTime: 5 * 60 * 1000,
       });
     } else if (id === 'attendance') {
       queryClient.prefetchQuery({
         queryKey: ['madrasa'],
         queryFn: () => apiClient.get('/madrasa').then(r => r.data.data),
-        staleTime: 5 * 60 * 1000,
       });
     } else if (id === 'finance') {
       queryClient.prefetchQuery({
         queryKey: ['finance-kpis'],
         queryFn: () => apiClient.get('/dashboard/kpis').then(r => r.data.data),
-        staleTime: 5 * 60 * 1000,
       });
       queryClient.prefetchQuery({
         queryKey: ['transactions', new Date().getFullYear().toString()],
         queryFn: () => apiClient.get(`/finance/transactions?year=${new Date().getFullYear()}`).then(r => r.data.data),
-        staleTime: 5 * 60 * 1000,
       });
     } else if (id === 'receipts') {
       queryClient.prefetchQuery({
         queryKey: ['receipts'],
         queryFn: () => apiClient.get('/receipts').then(r => r.data),
-        staleTime: 5 * 60 * 1000,
       });
       queryClient.prefetchQuery({
         queryKey: ['members-list'],
         queryFn: () => apiClient.get('/members').then(r => r.data),
-        staleTime: 5 * 60 * 1000,
       });
     } else if (id === 'donations') {
       queryClient.prefetchQuery({
         queryKey: ['donations', 1, ''],
         queryFn: () => apiClient.get('/donations', { params: { page: 1, limit: 20, campaign: '' } }).then(r => r.data),
-        staleTime: 5 * 60 * 1000,
       });
     } else if (id === 'recurring_donations') {
       queryClient.prefetchQuery({
         queryKey: ['families', ''],
         queryFn: () => apiClient.get('/families', { params: { search: '' } }).then(r => r.data.data || []),
-        staleTime: 5 * 60 * 1000,
       });
     }
   };
@@ -135,9 +122,7 @@ export function Sidebar() {
   const { data: pendingRegistrations } = useQuery({
     queryKey: ['pending-registrations-count'],
     queryFn: () => apiClient.get('/registrations/pending').then(r => r.data.data),
-    staleTime: 30000,
-    refetchInterval: 30000,
-    refetchOnWindowFocus: false,
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   const pendingCount = pendingRegistrations?.length || 0;
@@ -152,33 +137,24 @@ export function Sidebar() {
     return translated && translated !== `sidebar.${item.id}` ? translated : item.label;
   };
 
-  const toggleExpand = (idOrLabel: string) => {
+  const toggleExpand = (label: string) => {
     setExpandedItems(prev =>
-      prev.includes(idOrLabel)
-        ? prev.filter(i => i !== idOrLabel && i !== (idOrLabel === 'family_members' ? 'Family & Members' : idOrLabel === 'finance' ? 'Finance' : ''))
-        : [...prev, idOrLabel]
+      prev.includes(label) ? prev.filter(i => i !== label) : [...prev, label]
     );
   };
 
-  const isActive = (href?: string) => {
-    if (!href || href === '/') return false;
-    if (pathname === href) return true;
-    if (href === '/finance') return pathname === '/finance';
-    if (href === '/members') return pathname === '/members' || (pathname.startsWith('/members/') && !pathname.startsWith('/members/import-export'));
-    return pathname.startsWith(href + '/');
-  };
+  const isActive = (href?: string) => href && pathname.startsWith(href) && href !== '/';
 
   const renderNavItem = (item: NavItem, depth = 0) => {
     const active = isActive(item.href);
+    const expanded = expandedItems.includes(item.label);
     const hasChildren = item.children && item.children.length > 0;
-    const hasActiveChild = item.children?.some(child => isActive(child.href));
-    const expanded = expandedItems.includes(item.id) || expandedItems.includes(item.label) || hasActiveChild;
 
     if (hasChildren) {
       return (
-        <div key={item.id || item.label}>
+        <div key={item.label}>
           <button
-            onClick={() => toggleExpand(item.id)}
+            onClick={() => toggleExpand(item.label)}
             className={cn(
               'nav-item w-full',
               expanded && 'text-emerald-400',
