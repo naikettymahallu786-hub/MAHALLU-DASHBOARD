@@ -223,7 +223,7 @@ export default function DashboardPage() {
     { title: t('dashboard.totalMembers'), value: kpis?.totalMembers || 0, icon: Users, color: '#3b82f6', trend: 'up' as const, change: t('sidebar.members'), href: '/members' },
     { title: t('sidebar.students'), value: kpis?.activeStudents || 0, icon: GraduationCap, color: '#8b5cf6', trend: 'neutral' as const, change: t('sidebar.students'), href: '/students' },
     { title: t('sidebar.teachers'), value: kpis?.activeTeachers || 0, icon: UserCheck, color: '#f59e0b', change: t('sidebar.teachers'), href: '/teachers' },
-    { title: t('dashboard.monthlyCollection'), value: formatKpiCurrency(kpis?.monthlyIncome), icon: TrendingUp, color: '#059669', trend: 'up' as const, change: t('finance.income') },
+    { title: t('dashboard.monthlyCollection'), value: formatKpiCurrency(kpis?.monthlyIncome), icon: TrendingUp, color: '#059669', trend: 'up' as const, change: t('finance.income'), href: '/finance/fund-income' },
     { title: t('finance.expense'), value: formatKpiCurrency(kpis?.monthlyExpenses), icon: TrendingDown, color: '#f43f5e', trend: 'down' as const, change: t('finance.expense') },
     { title: t('dashboard.pendingDues'), value: formatKpiCurrency(pendingDuesValue), icon: Clock, color: '#f59e0b', change: t('dashboard.pendingDues'), href: '/finance/reports?paymentStatus=unpaid' },
     { title: t('sidebar.donations'), value: formatKpiCurrency(kpis?.monthlyDonations), icon: Heart, color: '#ec4899', trend: 'up' as const, change: t('sadaqah_page.thisMonth'), href: '/donations' },
