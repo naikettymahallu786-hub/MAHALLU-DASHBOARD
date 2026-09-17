@@ -71,25 +71,51 @@ export default function FinanceOverviewPage() {
         {[
           { label: t('finance_page.totalBalance'), value: formatCurrency(totalBalance), icon: Wallet, color: totalBalance >= 0 ? '#059669' : '#f43f5e' },
           { label: t('finance_page.totalAccounts'), value: accounts.length.toString(), icon: FolderKanban, color: '#3b82f6' },
-          { label: t('finance_page.monthlyIncome'), value: formatCurrency(totalIncome), icon: ArrowUpRight, color: '#059669' },
+          { label: t('finance_page.monthlyIncome'), value: formatCurrency(totalIncome), icon: ArrowUpRight, color: '#059669', href: '/finance/fund-income', badge: 'View Breakdown →' },
           { label: t('finance_page.monthlyExpenses'), value: formatCurrency(totalExpense), icon: ArrowDownRight, color: '#f43f5e' },
-        ].map((stat, i) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
-            className="section-card flex items-center gap-4"
-          >
-            <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0" style={{ background: `${stat.color}15` }}>
-              <stat.icon size={20} style={{ color: stat.color }} />
+        ].map((stat, i) => {
+          const cardContent = (
+            <div className={cn(
+              "section-card flex items-center justify-between gap-3 h-full transition-all duration-200",
+              stat.href && "hover:border-emerald-500/50 hover:shadow-md hover:bg-emerald-500/[0.02] cursor-pointer group"
+            )}>
+              <div className="flex items-center gap-4">
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105" style={{ background: `${stat.color}15` }}>
+                  <stat.icon size={20} style={{ color: stat.color }} />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{stat.value}</p>
+                  <p className="text-xs text-muted-foreground">{stat.label}</p>
+                  {stat.badge && (
+                    <span className="inline-block text-[10px] font-semibold text-emerald-600 mt-1 group-hover:underline">
+                      {stat.badge}
+                    </span>
+                  )}
+                </div>
+              </div>
+              {stat.href && (
+                <ChevronRight size={18} className="text-muted-foreground/40 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all" />
+              )}
             </div>
-            <div>
-              <p className="text-2xl font-bold">{stat.value}</p>
-              <p className="text-xs text-muted-foreground">{stat.label}</p>
-            </div>
-          </motion.div>
-        ))}
+          );
+
+          return (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
+            >
+              {stat.href ? (
+                <Link href={stat.href} className="block h-full">
+                  {cardContent}
+                </Link>
+              ) : (
+                cardContent
+              )}
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* Search & Filter Bar */}

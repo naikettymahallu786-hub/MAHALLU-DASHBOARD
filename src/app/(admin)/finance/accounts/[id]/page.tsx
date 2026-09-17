@@ -4,13 +4,20 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ArrowUpRight, ArrowDownRight, Wallet, Plus, Download, X, Loader2, FileText, Search, Trash2, Calendar, Building2 } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, ArrowDownRight, Wallet, Plus, Download, X, Loader2, FileText, Search, Trash2, Calendar, Building2, RefreshCw, Filter } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 import { cn, formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
 import { useTranslation } from '@/lib/i18n/useTranslation';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+
+// Helper to auto-generate standardized receipt numbers
+const generateRefNo = (type: 'INCOME' | 'EXPENSE') => {
+  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+  return type === 'INCOME' ? `REC-INC-${dateStr}-${randomSuffix}` : `REC-EXP-${dateStr}-${randomSuffix}`;
+};
 
 export default function AccountDetailPage() {
   const { id } = useParams() as { id: string };
@@ -21,6 +28,7 @@ export default function AccountDetailPage() {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear.toString());
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'INCOME' | 'EXPENSE'>('ALL');
+  const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -47,14 +55,45 @@ export default function AccountDetailPage() {
 
   const transactions = transactionsData || [];
 
-  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
+  // Extract unique categories for category filtering dropdown
+  const availableCategories = Array.from(
+    new Set(transactions.map((tx: any) => tx.category).filter(Boolean))
+  ) as string[];
+
+  // Client-side multi-field instant search & category filtering
+  const filteredTransactions = transactions.filter((tx: any) => {
+    if (categoryFilter !== 'ALL' && tx.category !== categoryFilter) {
+      return false;
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchCategory = tx.category?.toLowerCase().includes(q);
+      const matchDesc = tx.description?.toLowerCase().includes(q);
+      const matchRef = tx.referenceNo?.toLowerCase().includes(q);
+      const matchAmount = tx.amount?.toString().includes(q);
+      const matchDate = new Date(tx.date).toLocaleDateString().toLowerCase().includes(q);
+      return matchCategory || matchDesc || matchRef || matchAmount || matchDate;
+    }
+    return true;
+  });
+
+interface TransactionFormData {
+  type: 'INCOME' | 'EXPENSE';
+  amount: string | number;
+  category: string;
+  date: string;
+  description: string;
+  referenceNo: string;
+}
+
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<TransactionFormData>({
     defaultValues: {
       type: 'INCOME',
       amount: '',
-      category: '',
+      category: 'UPI',
       date: new Date().toISOString().split('T')[0],
       description: '',
-      referenceNo: ''
+      referenceNo: generateRefNo('INCOME')
     }
   });
 
@@ -62,21 +101,44 @@ export default function AccountDetailPage() {
 
   const openAddModal = (presetType: 'INCOME' | 'EXPENSE') => {
     setValue('type', presetType);
+    setValue('amount', '');
+    setValue('category', presetType === 'INCOME' ? 'UPI' : '');
+    setValue('date', new Date().toISOString().split('T')[0]);
+    setValue('description', '');
+    setValue('referenceNo', generateRefNo(presetType));
     setIsModalOpen(true);
   };
 
+  const handleTypeSwitch = (newType: 'INCOME' | 'EXPENSE') => {
+    setValue('type', newType);
+    setValue('category', newType === 'INCOME' ? 'UPI' : '');
+    setValue('referenceNo', generateRefNo(newType));
+  };
+
   const addTxMutation = useMutation({
-    mutationFn: (data: any) => apiClient.post('/finance/transactions', { ...data, accountId: id }),
+    mutationFn: (data: any) => {
+      const payload = {
+        ...data,
+        accountId: id,
+        // Category: optional for expense, defaults to General Expense. For income, defaults to General Income
+        category: data.category?.trim() || (data.type === 'EXPENSE' ? 'General Expense' : 'General Income'),
+        // Description: optional, defaults to "-" to satisfy legacy backend validation if empty
+        description: data.description?.trim() || '-',
+        // ReferenceNo: ensure auto-generated if omitted
+        referenceNo: data.referenceNo?.trim() || generateRefNo(data.type)
+      };
+      return apiClient.post('/finance/transactions', payload);
+    },
     onSuccess: () => {
       toast.success('Transaction recorded successfully');
       setIsModalOpen(false);
       reset({
         type: watchType,
         amount: '',
-        category: '',
+        category: watchType === 'INCOME' ? 'UPI' : '',
         date: new Date().toISOString().split('T')[0],
         description: '',
-        referenceNo: ''
+        referenceNo: generateRefNo(watchType)
       });
       queryClient.invalidateQueries({ queryKey: ['account', id] });
       queryClient.invalidateQueries({ queryKey: ['account-transactions', id] });
@@ -230,33 +292,52 @@ export default function AccountDetailPage() {
       <div className="section-card p-0 overflow-hidden">
         {/* Filter Controls Header */}
         <div className="p-4 border-b border-border flex flex-col md:flex-row md:items-center justify-between gap-3 bg-muted/20">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Type Filter:</span>
-            <div className="inline-flex rounded-xl bg-background border p-1 text-xs font-semibold">
-              {(['ALL', 'INCOME', 'EXPENSE'] as const).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setTypeFilter(t)}
-                  className={cn(
-                    "px-3 py-1 rounded-lg transition-all",
-                    typeFilter === t
-                      ? t === 'INCOME' ? "bg-emerald-600 text-white font-bold" : t === 'EXPENSE' ? "bg-rose-600 text-white font-bold" : "bg-primary text-primary-foreground font-bold"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {t}
-                </button>
-              ))}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Type:</span>
+              <div className="inline-flex rounded-xl bg-background border p-1 text-xs font-semibold">
+                {(['ALL', 'INCOME', 'EXPENSE'] as const).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setTypeFilter(t)}
+                    className={cn(
+                      "px-3 py-1 rounded-lg transition-all",
+                      typeFilter === t
+                        ? t === 'INCOME' ? "bg-emerald-600 text-white font-bold" : t === 'EXPENSE' ? "bg-rose-600 text-white font-bold" : "bg-primary text-primary-foreground font-bold"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
             </div>
+
+            {/* Category Filter Dropdown */}
+            {availableCategories.length > 0 && (
+              <div className="flex items-center gap-1.5">
+                <Filter size={14} className="text-muted-foreground" />
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="px-3 py-1.5 rounded-xl border bg-background text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="ALL">All Categories ({availableCategories.length})</option>
+                  {availableCategories.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             {/* Search */}
-            <div className="relative w-full sm:w-56">
+            <div className="relative w-full sm:w-64">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Search category, description..."
+                placeholder="Search category, mode, ref #, desc..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-3 py-1.5 rounded-xl border bg-background text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
@@ -279,11 +360,17 @@ export default function AccountDetailPage() {
         {/* Ledger Table */}
         {txLoading ? (
           <div className="p-12 flex justify-center"><Loader2 size={32} className="animate-spin text-muted-foreground" /></div>
-        ) : transactions.length === 0 ? (
+        ) : filteredTransactions.length === 0 ? (
           <div className="p-12 text-center text-muted-foreground">
             <FileText size={36} className="mx-auto mb-2 opacity-30" />
-            <p className="font-semibold text-sm">No transactions recorded for this account</p>
-            <p className="text-xs text-muted-foreground mt-1">Use the "+ Record Income" or "- Record Expense" buttons above.</p>
+            <p className="font-semibold text-sm">
+              {transactions.length === 0 ? "No transactions recorded for this account" : "No matching transactions found"}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {transactions.length === 0
+                ? "Use the '+ Record Income' or '- Record Expense' buttons above."
+                : "Try clearing your search query or category filter."}
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -292,7 +379,7 @@ export default function AccountDetailPage() {
                 <tr className="bg-muted/30 text-xs font-bold text-muted-foreground uppercase border-b">
                   <th className="pl-6 py-3 text-left">Date</th>
                   <th className="py-3 text-left">Type</th>
-                  <th className="py-3 text-left">Category</th>
+                  <th className="py-3 text-left">Category / Mode</th>
                   <th className="py-3 text-left">Description</th>
                   <th className="py-3 text-left">Ref / Receipt #</th>
                   <th className="py-3 text-right pr-6">Amount (₹)</th>
@@ -300,7 +387,7 @@ export default function AccountDetailPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {transactions.map((tx: any) => {
+                {filteredTransactions.map((tx: any) => {
                   const isIncome = tx.type === 'INCOME';
                   return (
                     <tr key={tx._id} className="hover:bg-muted/20 transition-colors">
@@ -315,9 +402,9 @@ export default function AccountDetailPage() {
                           {isIncome ? 'INCOME' : 'EXPENSE'}
                         </span>
                       </td>
-                      <td className="py-3.5 font-semibold text-xs">{tx.category}</td>
+                      <td className="py-3.5 font-semibold text-xs">{tx.category || '-'}</td>
                       <td className="py-3.5 text-xs text-muted-foreground max-w-[240px] truncate" title={tx.description}>
-                        {tx.description}
+                        {tx.description && tx.description !== '-' ? tx.description : <span className="opacity-40 italic">No description</span>}
                       </td>
                       <td className="py-3.5 text-xs font-mono text-muted-foreground">{tx.referenceNo || '-'}</td>
                       <td className={cn(
@@ -360,7 +447,7 @@ export default function AccountDetailPage() {
             >
               <div className="p-4 border-b flex items-center justify-between bg-card">
                 <h2 className="font-bold text-base flex items-center gap-2">
-                  <span>Record Transaction</span>
+                  <span>Record {watchType === 'INCOME' ? 'Income' : 'Expense'}</span>
                   <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                     {account.name}
                   </span>
@@ -375,10 +462,7 @@ export default function AccountDetailPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
-                    onClick={() => {
-                      setValue('type', 'INCOME');
-                      setValue('category', '');
-                    }}
+                    onClick={() => handleTypeSwitch('INCOME')}
                     className={cn(
                       "p-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all",
                       watchType === 'INCOME' ? "bg-emerald-600 text-white border-emerald-600 shadow-sm" : "bg-muted text-muted-foreground"
@@ -388,10 +472,7 @@ export default function AccountDetailPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      setValue('type', 'EXPENSE');
-                      setValue('category', '');
-                    }}
+                    onClick={() => handleTypeSwitch('EXPENSE')}
                     className={cn(
                       "p-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all",
                       watchType === 'EXPENSE' ? "bg-rose-600 text-white border-rose-600 shadow-sm" : "bg-muted text-muted-foreground"
@@ -401,6 +482,7 @@ export default function AccountDetailPage() {
                   </button>
                 </div>
 
+                {/* Amount */}
                 <div>
                   <label className="block text-xs font-semibold mb-1.5">Amount (₹) *</label>
                   <input
@@ -413,30 +495,48 @@ export default function AccountDetailPage() {
                   {errors.amount && <p className="text-xs text-red-500 mt-1">{errors.amount.message as string}</p>}
                 </div>
 
+                {/* Category / Mode of Payment / Source */}
                 <div>
-                  <label className="block text-xs font-semibold mb-1.5">Category *</label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold">
+                      {watchType === 'INCOME' ? 'Mode of Payment / Source *' : 'Category (Optional)'}
+                    </label>
+                    <span className="text-[11px] text-muted-foreground">
+                      {watchType === 'INCOME' ? 'e.g. UPI, By Hand, Transfer' : 'Optional'}
+                    </span>
+                  </div>
                   <input
                     type="text"
-                    {...register('category', { required: 'Category is required' })}
-                    placeholder={watchType === 'INCOME' ? "e.g. Friday Collection, Donation, Rent..." : "e.g. Salary, Electricity, Event, Maintenance..."}
+                    {...register('category', {
+                      required: watchType === 'INCOME' ? 'Payment mode or source is required' : false
+                    })}
+                    placeholder={
+                      watchType === 'INCOME'
+                        ? "e.g. UPI, By Hand (Cash), Transfer from Friday Collection..."
+                        : "e.g. Staff Salary, Electricity, Maintenance (Optional)..."
+                    }
                     className="w-full p-2.5 rounded-xl border text-sm focus:ring-2 focus:ring-primary/20 focus:outline-none"
                   />
                   {errors.category && <p className="text-xs text-red-500 mt-1">{errors.category.message as string}</p>}
 
-                  {/* Quick suggestion chips */}
+                  {/* Suggestion chips */}
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {(watchType === 'INCOME' ? [
+                      'UPI',
+                      'By Hand (Cash)',
+                      'Bank Transfer',
+                      'Transfer from Friday Collection',
                       'Friday Collection',
-                      'General Donation',
-                      'Special Collection',
+                      'Special Donation',
                       'Rental Income',
                       'Other Income'
                     ] : [
                       'Staff Salary',
-                      'Event Expenses',
                       'Electricity & Water',
                       'Maintenance & Repairs',
+                      'Event Expenses',
                       'Equipment & Goods',
+                      'Office & Admin',
                       'Other Expense'
                     ]).map((cat) => (
                       <button
@@ -451,7 +551,8 @@ export default function AccountDetailPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                {/* Date & Ref / Receipt # */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold mb-1.5">Date *</label>
                     <input
@@ -461,25 +562,48 @@ export default function AccountDetailPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold mb-1.5">Ref / Receipt #</label>
-                    <input
-                      type="text"
-                      {...register('referenceNo')}
-                      placeholder="e.g. REC-104"
-                      className="w-full p-2.5 rounded-xl border text-sm focus:ring-2 focus:ring-primary/20 focus:outline-none"
-                    />
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-semibold">Ref / Receipt #</label>
+                      <button
+                        type="button"
+                        onClick={() => setValue('referenceNo', generateRefNo(watchType))}
+                        className="text-[11px] text-primary hover:underline flex items-center gap-1"
+                        title="Generate a new reference number"
+                      >
+                        <RefreshCw size={10} /> Auto-generate
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        {...register('referenceNo')}
+                        placeholder="Auto-generated"
+                        className="w-full p-2.5 pr-8 rounded-xl border font-mono text-xs focus:ring-2 focus:ring-primary/20 focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setValue('referenceNo', generateRefNo(watchType))}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1"
+                        title="Regenerate auto receipt #"
+                      >
+                        <RefreshCw size={12} />
+                      </button>
+                    </div>
                   </div>
                 </div>
 
+                {/* Description (Optional) */}
                 <div>
-                  <label className="block text-xs font-semibold mb-1.5">Description *</label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold">Description (Optional)</label>
+                    <span className="text-[11px] text-muted-foreground">Optional</span>
+                  </div>
                   <input
                     type="text"
-                    {...register('description', { required: 'Description is required' })}
-                    placeholder="Short description of the income/expense..."
+                    {...register('description')}
+                    placeholder="Short optional note (e.g. Paid by Ahmad, Milad stage light...)"
                     className="w-full p-2.5 rounded-xl border text-sm focus:ring-2 focus:ring-primary/20 focus:outline-none"
                   />
-                  {errors.description && <p className="text-xs text-red-500 mt-1">{errors.description.message as string}</p>}
                 </div>
 
                 <div className="pt-2 flex items-center justify-end gap-3 border-t">
